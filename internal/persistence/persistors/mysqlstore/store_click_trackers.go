@@ -352,9 +352,9 @@ func (m *Repository) GetClickTrackerByName(ctx context.Context, tx persistence.T
 		return nil, fmt.Errorf("click tracker filtered by name: %v", err)
 	}
 
-	//if paginated.Pagination.RowCount == 0 {
-	//	return nil, nil
-	//}
+	if paginated.Pagination.RowCount == 0 {
+		return nil, nil
+	}
 
 	if paginated.Pagination.RowCount != 1 {
 		return nil, errors.New("expected exactly one click tracker entry")
