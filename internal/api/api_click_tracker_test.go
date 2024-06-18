@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/dembygenesis/local.tools/internal/api/apifakes"
 	"github.com/dembygenesis/local.tools/internal/api/testassets"
 	"github.com/dembygenesis/local.tools/internal/lib/logger"
 	"github.com/dembygenesis/local.tools/internal/model"
@@ -261,59 +263,80 @@ func getTestCasesCreateClickTrackers() []testCaseCreateClickTrackers {
 				modelhelpers.AssertNonEmptyClickTrackers(t, []model.ClickTracker{*clickTracker})
 			},
 		},
-		//{
-		//	name: "fail-empty-body",
-		//	body: map[string]interface{}{},
-		//	fnGetTestServices: func(t *testing.T) (*testServices, func()) {
-		//		container, cleanup := testassets.GetConcreteContainer(t)
-		//		return &testServices{catService: container.CategoryService, orgService: container.OrganizationService, capPagesService: container.CapturePagesService}, func() {
-		//			cleanup()
-		//		}
-		//	},
-		//	assertions: func(t *testing.T, resp []byte, respCode int) {
-		//		assert.NotNil(t, resp, "unexpected nil response")
-		//		assert.Equal(t, respCode, http.StatusBadRequest)
-		//		require.Contains(t, string(resp), "validate:")
-		//	},
-		//},
-		//{
-		//	name: "fail-invalid-category-ref-id",
-		//	body: map[string]interface{}{
-		//		"name":                 "Example",
-		//		"category_type_ref_id": 19999,
-		//	},
-		//	fnGetTestServices: func(t *testing.T) (*testServices, func()) {
-		//		container, cleanup := testassets.GetConcreteContainer(t)
-		//		return &testServices{catService: container.CategoryService, orgService: container.OrganizationService, capPagesService: container.CapturePagesService}, func() {
-		//			cleanup()
-		//		}
-		//	},
-		//	assertions: func(t *testing.T, resp []byte, respCode int) {
-		//		assert.NotNil(t, resp, "unexpected nil response")
-		//		assert.Equal(t, respCode, http.StatusBadRequest)
-		//		require.Contains(t, string(resp), "invalid category_type_id")
-		//	},
-		//},
-		//{
-		//	name: "fail-mock-server-error",
-		//	body: map[string]interface{}{
-		//		"name":                 "Example",
-		//		"category_type_ref_id": 1,
-		//	},
-		//	fnGetTestServices: func(t *testing.T) (*testServices, func()) {
-		//		fakeCategoryService := apifakes.FakeCategoryService{}
-		//		fakeCategoryService.CreateCategoryReturns(nil, errors.New("mock error"))
-		//		fakeOrganizationService := apifakes.FakeOrganizationService{}
-		//		fakeOrganizationService.CreateOrganizationReturns(nil, errors.New("mock error"))
-		//		fakeCapturePagesService := apifakes.FakeCapturePagesService{}
-		//		fakeCapturePagesService.CreateCapturePagesReturns(nil, errors.New("mock error"))
-		//		return &testServices{catService: &fakeCategoryService, orgService: &fakeOrganizationService, capPagesService: &fakeCapturePagesService}, func() {}
-		//	},
-		//	assertions: func(t *testing.T, resp []byte, respCode int) {
-		//		require.NotNil(t, resp, "unexpected nil response")
-		//		assert.Equal(t, http.StatusInternalServerError, respCode)
-		//	},
-		//},
+		{
+			name: "fail-empty-body",
+			body: map[string]interface{}{},
+			fnGetTestServices: func(t *testing.T) (*testServices, func()) {
+				container, cleanup := testassets.GetConcreteContainer(t)
+				return &testServices{
+						catService:      container.CategoryService,
+						orgService:      container.OrganizationService,
+						capPagesService: container.CapturePagesService,
+						ctService:       container.ClickTrackerService,
+					}, func() {
+						cleanup()
+					}
+			},
+			assertions: func(t *testing.T, resp []byte, respCode int) {
+				assert.NotNil(t, resp, "unexpected nil response")
+				assert.Equal(t, respCode, http.StatusBadRequest)
+				require.Contains(t, string(resp), "validate:")
+			},
+		},
+		{
+			name: "fail-invalid-click-tracker-sets-id",
+			body: map[string]interface{}{
+				"name":                 "Example",
+				"created_by":           2,
+				"updated_by":           2,
+				"click_tracker_set_id": 77777,
+			},
+			fnGetTestServices: func(t *testing.T) (*testServices, func()) {
+				container, cleanup := testassets.GetConcreteContainer(t)
+				return &testServices{
+						catService:      container.CategoryService,
+						orgService:      container.OrganizationService,
+						capPagesService: container.CapturePagesService,
+						ctService:       container.ClickTrackerService,
+					}, func() {
+						cleanup()
+					}
+			},
+			assertions: func(t *testing.T, resp []byte, respCode int) {
+				assert.NotNil(t, resp, "unexpected nil response")
+				assert.Equal(t, respCode, http.StatusBadRequest)
+				require.Contains(t, string(resp), "invalid click_tracker_set_id")
+			},
+		},
+		{
+			name: "fail-mock-server-error",
+			body: map[string]interface{}{
+				"name":                 "Tracker 5",
+				"created_by":           2,
+				"updated_by":           2,
+				"click_tracker_set_id": 2,
+			},
+			fnGetTestServices: func(t *testing.T) (*testServices, func()) {
+				fakeCategoryService := apifakes.FakeCategoryService{}
+				fakeCategoryService.CreateCategoryReturns(nil, errors.New("mock error"))
+				fakeOrganizationService := apifakes.FakeOrganizationService{}
+				fakeOrganizationService.CreateOrganizationReturns(nil, errors.New("mock error"))
+				fakeCapturePagesService := apifakes.FakeCapturePagesService{}
+				fakeCapturePagesService.CreateCapturePagesReturns(nil, errors.New("mock error"))
+				fakeClickTrackerService := apifakes.FakeClickTrackerService{}
+				fakeClickTrackerService.CreateClickTrackerReturns(nil, errors.New("mock error"))
+				return &testServices{
+					catService:      &fakeCategoryService,
+					orgService:      &fakeOrganizationService,
+					capPagesService: &fakeCapturePagesService,
+					ctService:       &fakeClickTrackerService,
+				}, func() {}
+			},
+			assertions: func(t *testing.T, resp []byte, respCode int) {
+				require.NotNil(t, resp, "unexpected nil response")
+				assert.Equal(t, http.StatusInternalServerError, respCode)
+			},
+		},
 	}
 }
 

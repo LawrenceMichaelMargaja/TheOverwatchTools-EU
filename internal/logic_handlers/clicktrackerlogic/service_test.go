@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"testing"
 	"time"
 )
@@ -217,12 +218,12 @@ func getTestCasesCreateClickTracker() []testCaseCreateClickTracker {
 				ctx: context.TODO(),
 				clickTracker: &model.CreateClickTracker{
 					Name:              "Example",
-					UrlName:           null.StringFrom("https://example.com"),          // Properly use null.StringFrom
-					RedirectUrl:       null.StringFrom("https://redirect.example.com"), // Properly use null.StringFrom
-					CreatedBy:         1,                                               // Ensure this user exists in your test DB
-					UpdatedBy:         1,                                               // Ensure this user exists in your test DB
-					ClickTrackerSetId: 4,                                               // Example set ID
-					CountryId:         null.IntFrom(1),                                 // Example country ID
+					UrlName:           null.StringFrom("https://example.com"),
+					RedirectUrl:       null.StringFrom("https://redirect.example.com"),
+					CreatedBy:         1,
+					UpdatedBy:         1,
+					ClickTrackerSetId: 4,
+					CountryId:         null.IntFrom(1),
 				},
 			},
 			assertions: func(t *testing.T, clickTracker *model.ClickTracker, err error) {
@@ -234,118 +235,138 @@ func getTestCasesCreateClickTracker() []testCaseCreateClickTracker {
 				require.NotEqual(t, 0, clickTracker.ClickTrackerSetId, "unexpected empty click tracker type ref id")
 			},
 			mutations: func(t *testing.T, db *sqlx.DB) {
-				// Add any necessary database mutations here
+
 			},
 		},
-		//{
-		//	name:            "success",
-		//	getDependencies: getConcreteDependencies,
-		//	args: argsCreateCategory{
-		//		ctx: context.TODO(),
-		//		category: &model.CreateCategory{
-		//			CategoryTypeRefId: 1,
-		//			Name:              "Example",
-		//		},
-		//	},
-		//	assertions: func(t *testing.T, category *model.Category, err error) {
-		//		require.NoError(t, err, "unexpected error")
-		//		require.NotNil(t, category, "unexpected nil category")
-		//
-		//		require.NotEqual(t, 0, category.Id, "unexpected nil category")
-		//		require.NotEmpty(t, category.Name, "unexpected empty category name")
-		//		require.NotEqual(t, 0, category.CategoryTypeRefId, "unexpected empty category type ref id")
-		//	},
-		//	mutations: func(t *testing.T, db *sqlx.DB) {
-		//
-		//	},
-		//},
-		//{
-		//	name:            "fail-internal-error",
-		//	getDependencies: getConcreteDependencies,
-		//	args: argsCreateCategory{
-		//		ctx: context.TODO(),
-		//		category: &model.CreateCategory{
-		//			CategoryTypeRefId: 1,
-		//			Name:              "Example",
-		//		},
-		//	},
-		//	assertions: func(t *testing.T, category *model.Category, err error) {
-		//		assert.Error(t, err, "unexpected error")
-		//		assert.Nil(t, category, "unexpected nil category")
-		//	},
-		//	mutations: func(t *testing.T, db *sqlx.DB) {
-		//		testhelper.DropTable(t, db, mysqlmodel.TableNames.Category)
-		//	},
-		//},
-		//{
-		//	name:            "fail-invalid-args",
-		//	getDependencies: getConcreteDependencies,
-		//	args: argsCreateCategory{
-		//		ctx: context.TODO(),
-		//		category: &model.CreateCategory{
-		//			CategoryTypeRefId: 0,
-		//			Name:              "Example",
-		//		},
-		//	},
-		//	assertions: func(t *testing.T, category *model.Category, err error) {
-		//		assert.Error(t, err, "unexpected error")
-		//		assert.Nil(t, category, "unexpected nil category")
-		//	},
-		//	mutations: func(t *testing.T, db *sqlx.DB) {
-		//
-		//	},
-		//},
-		//{
-		//	name:            "fail-unique",
-		//	getDependencies: getConcreteDependencies,
-		//	args: argsCreateCategory{
-		//		ctx: context.TODO(),
-		//		category: &model.CreateCategory{
-		//			CategoryTypeRefId: 1,
-		//			Name:              "Example",
-		//		},
-		//	},
-		//	assertions: func(t *testing.T, category *model.Category, err error) {
-		//		assert.Error(t, err, "unexpected error")
-		//		assert.Nil(t, category, "unexpected nil category")
-		//	},
-		//	mutations: func(t *testing.T, db *sqlx.DB) {
-		//		entry := mysqlmodel.Category{
-		//			Name:              "Example",
-		//			CategoryTypeRefID: 1,
-		//		}
-		//		err := entry.Insert(context.TODO(), db, boil.Infer())
-		//		require.NoError(t, err, "unexpected insert error")
-		//	},
-		//},
-		//{
-		//	name: "fail-mock",
-		//	getDependencies: func(t *testing.T) (*dependencies, func(ignoreErrors ...bool)) {
-		//		fakeCleanup := func(ignoreErrors ...bool) {}
-		//		mockTxProvider := persistencefakes.FakeTransactionProvider{}
-		//		mockTxProvider.TxReturns(&persistencefakes.FakeTransactionHandler{}, errors.New(mockDbReturnsErr))
-		//
-		//		return &dependencies{
-		//			Persistor:  &categorylogicfakes.FakePersistor{},
-		//			TxProvider: &mockTxProvider,
-		//			Logger:     mockLogger,
-		//			Cleanup:    fakeCleanup,
-		//		}, fakeCleanup
-		//	},
-		//	args: argsCreateCategory{
-		//		ctx: context.TODO(),
-		//		category: &model.CreateCategory{
-		//			CategoryTypeRefId: 1,
-		//			Name:              "Example",
-		//		},
-		//	},
-		//	assertions: func(t *testing.T, category *model.Category, err error) {
-		//		assert.Error(t, err, "unexpected error")
-		//		assert.Nil(t, category, "unexpected nil category")
-		//	},
-		//	mutations: func(t *testing.T, db *sqlx.DB) {
-		//
-		//	},
-		//},
+		{
+			name:            "success",
+			getDependencies: getConcreteDependencies,
+			args: argsCreateClickTrackers{
+				ctx: context.TODO(),
+				clickTracker: &model.CreateClickTracker{
+					Name:              "Example",
+					UrlName:           null.StringFrom("https://example.com"),
+					RedirectUrl:       null.StringFrom("https://redirect.example.com"),
+					CreatedBy:         1,
+					UpdatedBy:         1,
+					ClickTrackerSetId: 4,
+					CountryId:         null.IntFrom(1),
+				},
+			},
+			assertions: func(t *testing.T, clickTracker *model.ClickTracker, err error) {
+				require.NoError(t, err, "unexpected error")
+				require.NotNil(t, clickTracker, "unexpected nil click tracker")
+
+				require.NotEqual(t, 0, clickTracker.Id, "unexpected nil click tracker")
+				require.NotEmpty(t, clickTracker.Name, "unexpected empty click tracker name")
+				require.NotEqual(t, 0, clickTracker.ClickTrackerSetId, "unexpected empty click tracker type ref id")
+			},
+			mutations: func(t *testing.T, db *sqlx.DB) {
+
+			},
+		},
+		{
+			name:            "fail-internal-error",
+			getDependencies: getConcreteDependencies,
+			args: argsCreateClickTrackers{
+				ctx: context.TODO(),
+				clickTracker: &model.CreateClickTracker{
+					Name:              "Example",
+					UrlName:           null.StringFrom("https://example.com"),
+					RedirectUrl:       null.StringFrom("https://redirect.example.com"),
+					CreatedBy:         0,
+					UpdatedBy:         0,
+					ClickTrackerSetId: 4,
+					CountryId:         null.IntFrom(1),
+				},
+			},
+			assertions: func(t *testing.T, category *model.ClickTracker, err error) {
+				assert.Error(t, err, "unexpected error")
+				assert.Nil(t, category, "unexpected nil click tracker")
+			},
+			mutations: func(t *testing.T, db *sqlx.DB) {
+				testhelper.DropTable(t, db, mysqlmodel.TableNames.Category)
+			},
+		},
+		{
+			name:            "fail-invalid-args",
+			getDependencies: getConcreteDependencies,
+			args: argsCreateClickTrackers{
+				ctx: context.TODO(),
+				clickTracker: &model.CreateClickTracker{
+					Name:              "Example",
+					UrlName:           null.StringFrom("https://example.com"),
+					RedirectUrl:       null.StringFrom("https://redirect.example.com"),
+					ClickTrackerSetId: 4,
+					CountryId:         null.IntFrom(1),
+				},
+			},
+			assertions: func(t *testing.T, category *model.ClickTracker, err error) {
+				assert.Error(t, err, "unexpected error")
+				assert.Nil(t, category, "unexpected nil click tracker")
+			},
+			mutations: func(t *testing.T, db *sqlx.DB) {
+
+			},
+		},
+		{
+			name:            "fail-unique",
+			getDependencies: getConcreteDependencies,
+			args: argsCreateClickTrackers{
+				ctx: context.TODO(),
+				clickTracker: &model.CreateClickTracker{
+					Name:              "Example",
+					UrlName:           null.StringFrom("https://example.com"),
+					RedirectUrl:       null.StringFrom("https://redirect.example.com"),
+					CreatedBy:         1,
+					UpdatedBy:         1,
+					ClickTrackerSetId: 4,
+					CountryId:         null.IntFrom(1),
+				},
+			},
+			assertions: func(t *testing.T, clickTracker *model.ClickTracker, err error) {
+				assert.Error(t, err, "unexpected error")
+				assert.Nil(t, clickTracker, "unexpected nil click tracker")
+			},
+			mutations: func(t *testing.T, db *sqlx.DB) {
+				entry := mysqlmodel.ClickTracker{
+					Name:              "Example",
+					CreatedBy:         1,
+					UpdatedBy:         1,
+					ClickTrackerSetID: 4,
+				}
+				err := entry.Insert(context.TODO(), db, boil.Infer())
+				require.NoError(t, err, "unexpected insert error")
+			},
+		},
+		{
+			name: "fail-mock",
+			getDependencies: func(t *testing.T) (*dependencies, func(ignoreErrors ...bool)) {
+				fakeCleanup := func(ignoreErrors ...bool) {}
+				mockTxProvider := persistencefakes.FakeTransactionProvider{}
+				mockTxProvider.TxReturns(&persistencefakes.FakeTransactionHandler{}, errors.New(mockDbReturnsErr))
+
+				return &dependencies{
+					Persistor:  &clicktrackerlogicfakes.FakePersistor{},
+					TxProvider: &mockTxProvider,
+					Logger:     mockLogger,
+					Cleanup:    fakeCleanup,
+				}, fakeCleanup
+			},
+			args: argsCreateClickTrackers{
+				ctx: context.TODO(),
+				clickTracker: &model.CreateClickTracker{
+					ClickTrackerSetId: 1,
+					Name:              "Example",
+				},
+			},
+			assertions: func(t *testing.T, clickTracker *model.ClickTracker, err error) {
+				assert.Error(t, err, "unexpected error")
+				assert.Nil(t, clickTracker, "unexpected nil click tracker")
+			},
+			mutations: func(t *testing.T, db *sqlx.DB) {
+
+			},
+		},
 	}
 }

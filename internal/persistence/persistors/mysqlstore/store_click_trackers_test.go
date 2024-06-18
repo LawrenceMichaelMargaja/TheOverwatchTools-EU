@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"strings"
 	"testing"
 )
 
@@ -194,24 +195,24 @@ func getAddClickTrackersTestCases() []createClickTrackersTestCase {
 				modelhelpers.AssertNonEmptyClickTrackers(t, []model.ClickTracker{*clickTracker})
 			},
 		},
-		// {
-		// 	name:               "fail-name-exceeds-limit",
-		// 	clickTrackersName:  strings.Repeat("a", 256),
-		// 	clickTrackersSetId: 1,
-		// 	assertions: func(t *testing.T, db *sqlx.DB, clickTracker *model.ClickTracker, err error) {
-		// 		assert.Nil(t, clickTracker, "unexpected non-nil click tracker")
-		// 		assert.Error(t, err, "unexpected nil-error")
-		// 	},
-		// },
-		// {
-		// 	name:               "fail-invalid-click-trackers-set-id",
-		// 	clickTrackersName:  "Valid Name",
-		// 	clickTrackersSetId: 999, // Assuming 999 is an invalid id
-		// 	assertions: func(t *testing.T, db *sqlx.DB, clickTracker *model.ClickTracker, err error) {
-		// 		assert.Nil(t, clickTracker, "unexpected non-nil click tracker")
-		// 		assert.Error(t, err, "unexpected nil-error")
-		// 	},
-		// },
+		{
+			name:               "fail-name-exceeds-limit",
+			clickTrackersName:  strings.Repeat("a", 256),
+			clickTrackersSetId: 1,
+			assertions: func(t *testing.T, db *sqlx.DB, clickTracker *model.ClickTracker, err error) {
+				assert.Nil(t, clickTracker, "unexpected non-nil click tracker")
+				assert.Error(t, err, "unexpected nil-error")
+			},
+		},
+		{
+			name:               "fail-invalid-click-trackers-set-id",
+			clickTrackersName:  "Valid Name",
+			clickTrackersSetId: 999, // Assuming 999 is an invalid id
+			assertions: func(t *testing.T, db *sqlx.DB, clickTracker *model.ClickTracker, err error) {
+				assert.Nil(t, clickTracker, "unexpected non-nil click tracker")
+				assert.Error(t, err, "unexpected nil-error")
+			},
+		},
 	}
 }
 
