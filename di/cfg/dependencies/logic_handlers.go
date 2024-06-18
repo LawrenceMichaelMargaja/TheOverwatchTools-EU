@@ -63,7 +63,7 @@ func GetLogicHandlers() []dingo.Def {
 					Persistor:  store,
 				})
 				if err != nil {
-					return nil, fmt.Errorf("logicclick: %v", err)
+					return nil, fmt.Errorf("logicclicktrackers: %v", err)
 				}
 				return logic, nil
 			},

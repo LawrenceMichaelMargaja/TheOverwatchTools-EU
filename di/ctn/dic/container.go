@@ -1188,6 +1188,151 @@ func LogicCategory(i interface{}) *categorylogic.Service {
 	return C(i).GetLogicCategory()
 }
 
+// SafeGetLogicClickTrackerSets retrieves the "logic_click_tracker_sets" object from the main scope.
+//
+// ---------------------------------------------
+//
+//	name: "logic_click_tracker_sets"
+//	type: *clicktrackerlogic.Service
+//	scope: "main"
+//	build: func
+//	params:
+//		- "0": Service(*config.App) ["config_layer"]
+//		- "1": Service(*logrus.Entry) ["logger_logrus"]
+//		- "2": Service(*mysqlconn.Provider) ["tx_provider"]
+//		- "3": Service(*mysqlstore.Repository) ["persistence_mysql"]
+//	unshared: false
+//	close: false
+//
+// ---------------------------------------------
+//
+// If the object can not be retrieved, it returns an error.
+func (c *Container) SafeGetLogicClickTrackerSets() (*clicktrackerlogic.Service, error) {
+	i, err := c.ctn.SafeGet("logic_click_tracker_sets")
+	if err != nil {
+		var eo *clicktrackerlogic.Service
+		return eo, err
+	}
+	o, ok := i.(*clicktrackerlogic.Service)
+	if !ok {
+		return o, errors.New("could get 'logic_click_tracker_sets' because the object could not be cast to *clicktrackerlogic.Service")
+	}
+	return o, nil
+}
+
+// GetLogicClickTrackerSets retrieves the "logic_click_tracker_sets" object from the main scope.
+//
+// ---------------------------------------------
+//
+//	name: "logic_click_tracker_sets"
+//	type: *clicktrackerlogic.Service
+//	scope: "main"
+//	build: func
+//	params:
+//		- "0": Service(*config.App) ["config_layer"]
+//		- "1": Service(*logrus.Entry) ["logger_logrus"]
+//		- "2": Service(*mysqlconn.Provider) ["tx_provider"]
+//		- "3": Service(*mysqlstore.Repository) ["persistence_mysql"]
+//	unshared: false
+//	close: false
+//
+// ---------------------------------------------
+//
+// If the object can not be retrieved, it panics.
+func (c *Container) GetLogicClickTrackerSets() *clicktrackerlogic.Service {
+	o, err := c.SafeGetLogicClickTrackerSets()
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+// UnscopedSafeGetLogicClickTrackerSets retrieves the "logic_click_tracker_sets" object from the main scope.
+//
+// ---------------------------------------------
+//
+//	name: "logic_click_tracker_sets"
+//	type: *clicktrackerlogic.Service
+//	scope: "main"
+//	build: func
+//	params:
+//		- "0": Service(*config.App) ["config_layer"]
+//		- "1": Service(*logrus.Entry) ["logger_logrus"]
+//		- "2": Service(*mysqlconn.Provider) ["tx_provider"]
+//		- "3": Service(*mysqlstore.Repository) ["persistence_mysql"]
+//	unshared: false
+//	close: false
+//
+// ---------------------------------------------
+//
+// This method can be called even if main is a sub-scope of the container.
+// If the object can not be retrieved, it returns an error.
+func (c *Container) UnscopedSafeGetLogicClickTrackerSets() (*clicktrackerlogic.Service, error) {
+	i, err := c.ctn.UnscopedSafeGet("logic_click_tracker_sets")
+	if err != nil {
+		var eo *clicktrackerlogic.Service
+		return eo, err
+	}
+	o, ok := i.(*clicktrackerlogic.Service)
+	if !ok {
+		return o, errors.New("could get 'logic_click_tracker_sets' because the object could not be cast to *clicktrackerlogic.Service")
+	}
+	return o, nil
+}
+
+// UnscopedGetLogicClickTrackerSets retrieves the "logic_click_tracker_sets" object from the main scope.
+//
+// ---------------------------------------------
+//
+//	name: "logic_click_tracker_sets"
+//	type: *clicktrackerlogic.Service
+//	scope: "main"
+//	build: func
+//	params:
+//		- "0": Service(*config.App) ["config_layer"]
+//		- "1": Service(*logrus.Entry) ["logger_logrus"]
+//		- "2": Service(*mysqlconn.Provider) ["tx_provider"]
+//		- "3": Service(*mysqlstore.Repository) ["persistence_mysql"]
+//	unshared: false
+//	close: false
+//
+// ---------------------------------------------
+//
+// This method can be called even if main is a sub-scope of the container.
+// If the object can not be retrieved, it panics.
+func (c *Container) UnscopedGetLogicClickTrackerSets() *clicktrackerlogic.Service {
+	o, err := c.UnscopedSafeGetLogicClickTrackerSets()
+	if err != nil {
+		panic(err)
+	}
+	return o
+}
+
+// LogicClickTrackerSets retrieves the "logic_click_tracker_sets" object from the main scope.
+//
+// ---------------------------------------------
+//
+//	name: "logic_click_tracker_sets"
+//	type: *clicktrackerlogic.Service
+//	scope: "main"
+//	build: func
+//	params:
+//		- "0": Service(*config.App) ["config_layer"]
+//		- "1": Service(*logrus.Entry) ["logger_logrus"]
+//		- "2": Service(*mysqlconn.Provider) ["tx_provider"]
+//		- "3": Service(*mysqlstore.Repository) ["persistence_mysql"]
+//	unshared: false
+//	close: false
+//
+// ---------------------------------------------
+//
+// It tries to find the container with the C method and the given interface.
+// If the container can be retrieved, it calls the GetLogicClickTrackerSets method.
+// If the container can not be retrieved, it panics.
+func LogicClickTrackerSets(i interface{}) *clicktrackerlogic.Service {
+	return C(i).GetLogicClickTrackerSets()
+}
+
 // SafeGetLogicClickTrackers retrieves the "logic_click_trackers" object from the main scope.
 //
 // ---------------------------------------------

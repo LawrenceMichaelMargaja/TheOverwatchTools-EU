@@ -2,8 +2,6 @@ package mysqlstore
 
 import (
 	"fmt"
-	"testing"
-
 	"github.com/dembygenesis/local.tools/internal/model"
 	"github.com/dembygenesis/local.tools/internal/model/modelhelpers"
 	"github.com/dembygenesis/local.tools/internal/persistence/database_helpers/mysql/mysqlhelper"
@@ -12,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 type testCaseGetClickTrackers struct {
@@ -175,6 +174,8 @@ type createClickTrackersTestCase struct {
 	name               string
 	clickTrackersName  string
 	clickTrackersSetId int
+	createdBy          int
+	updatedBy          int
 	assertions         func(t *testing.T, db *sqlx.DB, clickTracker *model.ClickTracker, err error)
 }
 
@@ -184,6 +185,8 @@ func getAddClickTrackersTestCases() []createClickTrackersTestCase {
 			name:               "success",
 			clickTrackersName:  "Tracker 7",
 			clickTrackersSetId: 4,
+			createdBy:          1,
+			updatedBy:          1,
 			assertions: func(t *testing.T, db *sqlx.DB, clickTracker *model.ClickTracker, err error) {
 				assert.NotNil(t, clickTracker, "unexpected nil click tracker")
 				assert.NoError(t, err, "unexpected non-nil error")

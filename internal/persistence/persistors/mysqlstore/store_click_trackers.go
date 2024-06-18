@@ -10,9 +10,11 @@ import (
 	"github.com/dembygenesis/local.tools/internal/persistence/database_helpers/mysql/mysqltx"
 	"github.com/dembygenesis/local.tools/internal/sysconsts"
 	"github.com/dembygenesis/local.tools/internal/utilities/strutil"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"time"
 )
 
 func (m *Repository) GetClickTrackers(ctx context.Context, tx persistence.TransactionHandler, filters *model.ClickTrackerFilters) (*model.PaginatedClickTrackers, error) {
@@ -397,8 +399,14 @@ func (m *Repository) AddClickTracker(ctx context.Context, tx persistence.Transac
 		return nil, fmt.Errorf("extract context executor: %v", err)
 	}
 
+	now := time.Now()
+
 	entry := &mysqlmodel.ClickTracker{
 		Name:              clickTracker.Name,
+		CreatedBy:         clickTracker.CreatedBy,
+		UpdatedBy:         clickTracker.UpdatedBy,
+		CreatedAt:         null.TimeFrom(now),
+		UpdatedAt:         null.TimeFrom(now),
 		ClickTrackerSetID: clickTracker.ClickTrackerSetId,
 	}
 	if err = entry.Insert(ctx, ctxExec, boil.Infer()); err != nil {
