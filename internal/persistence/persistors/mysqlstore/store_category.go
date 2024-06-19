@@ -65,7 +65,7 @@ func (m *Repository) UpdateCategory(ctx context.Context, tx persistence.Transact
 	}
 
 	_, err = entry.Update(ctx, ctxExec, boil.Whitelist(cols...))
-	tx.Commit(ctx)
+	//tx.Commit(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("update failed: %v", err)
 	}
@@ -74,6 +74,14 @@ func (m *Repository) UpdateCategory(ctx context.Context, tx persistence.Transact
 	if err != nil {
 		return nil, fmt.Errorf("get category by id: %v", err)
 	}
+
+	fmt.Println("the ctx --- ", strutil.GetAsJson(&ctx))
+
+	//if err := tx.Commit(ctx); err != nil {
+	//	fmt.Println("Error during transaction commit")
+	//	return nil, fmt.Errorf("commit failed: %v", err)
+	//}
+	//tx.Commit(ctx)
 
 	if err := tx.Commit(ctx); err != nil {
 		fmt.Println("Error during transaction commit")
