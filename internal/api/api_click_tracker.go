@@ -85,16 +85,16 @@ func (a *Api) UpdateClickTracker(ctx *fiber.Ctx) error {
 func (a *Api) DeleteClickTracker(ctx *fiber.Ctx) error {
 	id := ctx.Params("id")
 	clickTrackerId, err := strconv.Atoi(id)
-	// ///////////////////////////
-	//click := ctx.Params("clicks")
-	//clickTrackerClicks, err := strconv.Atoi(click)
 	if err != nil {
 		return ctx.Status(http.StatusBadRequest).JSON(errs.ToArr(err))
 	}
 
 	deleteParams := &model.DeleteClickTracker{ID: clickTrackerId}
+<<<<<<< HEAD
 	clickParams := &model.ClickTracker{}
 	clickT := clickParams.Clicks
+=======
+>>>>>>> upstream/eu-capture-pages
 
 	fmt.Println("the clickT ---- ", clickT)
 
@@ -102,11 +102,16 @@ func (a *Api) DeleteClickTracker(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(http.StatusInternalServerError).JSON(errs.ToArr(err))
 	}
+	
+	return ctx.JSON("del")
 
+<<<<<<< HEAD
 	if clickT == 1 {
 		return ctx.JSON("delete it!")
 	} else {
 		fmt.Println("here???")
 		return ctx.JSON("Already del")
 	}
+=======
+>>>>>>> upstream/eu-capture-pages
 }
