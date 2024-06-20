@@ -254,6 +254,52 @@ func Test_ReadCategories(t *testing.T) {
 	require.True(t, len(paginatedCategories.Categories) > 0, "unexpected empty categories")
 }
 
+//func Test_UpdateCategories_Success(t *testing.T) {
+//	db, cp, cleanup := mysqlhelper.TestGetMockMariaDB(t)
+//	defer cleanup()
+//
+//	cfg := &Config{
+//		Logger:        testLogger,
+//		QueryTimeouts: testQueryTimeouts,
+//	}
+//
+//	m, err := New(cfg)
+//	require.NoError(t, err, "unexpected error")
+//	require.NotNil(t, m, "unexpected nil")
+//
+//	txHandler, err := mysqltx.New(&mysqltx.Config{
+//		Logger:       testLogger,
+//		Db:           db,
+//		DatabaseName: cp.Database,
+//	})
+//	require.NoError(t, err, "unexpected error creating the tx handler")
+//
+//	txHandlerDb, err := txHandler.Db(testCtx)
+//	require.NoError(t, err, "unexpected error fetching the db from the tx handler")
+//	require.NotNil(t, txHandlerDb, "unexpected nil tx handler db")
+//
+//	paginatedCategories, err := m.GetCategories(testCtx, txHandlerDb, nil)
+//	require.NoError(t, err, "unexpected error fetching the categories from the database")
+//	require.NotNil(t, txHandlerDb, "unexpected nil categories")
+//	require.True(t, len(paginatedCategories.Categories) > 0, "unexpected empty categories")
+//
+//	updateCategory := model.UpdateCategory{
+//		Id: 1,
+//		CategoryTypeRefId: null.Int{
+//			Int:   paginatedCategories.Categories[0].CategoryTypeRefId,
+//			Valid: true,
+//		},
+//		Name: null.String{
+//			String: paginatedCategories.Categories[0].Name + " sample_category",
+//			Valid:  true,
+//		},
+//	}
+//
+//	cat, err := m.UpdateCategory(testCtx, txHandlerDb, &updateCategory)
+//	require.NoError(t, err, "unexpected error updating a conflicting category from the database")
+//	assert.Equal(t, paginatedCategories.Categories[0].Name+" sample_category", cat.Name)
+//}
+
 func Test_UpdateCategories_Success(t *testing.T) {
 	db, cp, cleanup := mysqlhelper.TestGetMockMariaDB(t)
 	defer cleanup()
@@ -280,7 +326,7 @@ func Test_UpdateCategories_Success(t *testing.T) {
 
 	paginatedCategories, err := m.GetCategories(testCtx, txHandlerDb, nil)
 	require.NoError(t, err, "unexpected error fetching the categories from the database")
-	require.NotNil(t, txHandlerDb, "unexpected nil categories")
+	require.NotNil(t, paginatedCategories, "unexpected nil categories")
 	require.True(t, len(paginatedCategories.Categories) > 0, "unexpected empty categories")
 
 	updateCategory := model.UpdateCategory{
@@ -290,14 +336,16 @@ func Test_UpdateCategories_Success(t *testing.T) {
 			Valid: true,
 		},
 		Name: null.String{
-			String: paginatedCategories.Categories[0].Name + " new",
+			String: paginatedCategories.Categories[0].Name + " sample_category",
 			Valid:  true,
 		},
 	}
 
+	fmt.Println("UpdateCategory params:", strutil.GetAsJson(&updateCategory))
+
 	cat, err := m.UpdateCategory(testCtx, txHandlerDb, &updateCategory)
 	require.NoError(t, err, "unexpected error updating a conflicting category from the database")
-	assert.Equal(t, paginatedCategories.Categories[0].Name+" new", cat.Name)
+	assert.Equal(t, paginatedCategories.Categories[0].Name+" sample_category", cat.Name)
 }
 
 type deleteCategoryTestCase struct {

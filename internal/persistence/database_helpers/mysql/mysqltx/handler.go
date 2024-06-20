@@ -10,6 +10,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"reflect"
 )
 
 var (
@@ -131,6 +132,10 @@ func (m *Handler) Commit(ctx context.Context) error {
 	)
 
 	// We do nothing
+	fmt.Println("the m.hType ---- ", m.hType)
+	fmt.Println("the _db ---- ", _db)
+	fmt.Println("hType kind ---- ", reflect.Kind(m.hType))
+	fmt.Println("the _db kind ---- ", reflect.Kind(_db))
 	if m.hType == _db {
 		return errors.New(sysconsts.ErrCommitInvalidDB)
 	}
