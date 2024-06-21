@@ -6,15 +6,13 @@ import (
 	"github.com/dembygenesis/local.tools/internal/sysconsts"
 	"github.com/dembygenesis/local.tools/internal/utilities/errs"
 	"github.com/dembygenesis/local.tools/internal/utilities/validationutils"
-	// "github.com/volatiletech/null/v8"
-	"github.com/volatiletech/null"
 	"strings"
 )
 
 type UpdateCategory struct {
-	Id                int         `json:"id" validate:"required,greater_than_zero"`
-	CategoryTypeRefId null.Int    `json:"category_type_ref_id"`
-	Name              null.String `json:"name"`
+	Id                int    `json:"id" validate:"required,greater_than_zero"`
+	CategoryTypeRefId int    `json:"category_type_ref_id"`
+	Name              string `json:"name"`
 }
 
 type DeleteCategory struct {
@@ -32,20 +30,16 @@ func (c *UpdateCategory) Validate() error {
 	}
 
 	hasAtLeastOneUpdateParameters := false
-	if c.CategoryTypeRefId.Valid {
-		if c.CategoryTypeRefId.Int > 0 {
-			hasAtLeastOneUpdateParameters = true
-		} else {
-			errList.Add(sysconsts.ErrCapturePageSetId)
-		}
+	if c.CategoryTypeRefId > 0 {
+		hasAtLeastOneUpdateParameters = true
+	} else {
+		errList.Add(sysconsts.ErrCapturePageSetId)
 	}
 
-	if c.Name.Valid {
-		if c.Name.Valid && strings.TrimSpace(c.Name.String) != "" {
-			hasAtLeastOneUpdateParameters = true
-		} else {
-			errList.Add(sysconsts.ErrCategoryTypeRefIdInvalid)
-		}
+	if strings.TrimSpace(c.Name) != "" {
+		hasAtLeastOneUpdateParameters = true
+	} else {
+		errList.Add(sysconsts.ErrCategoryTypeRefIdInvalid)
 	}
 
 	if !hasAtLeastOneUpdateParameters {
@@ -55,33 +49,24 @@ func (c *UpdateCategory) Validate() error {
 	return nil
 }
 
-// ToCategory converts the UpdateCategory to a Category.
 func (c *UpdateCategory) ToCategory() *Category {
-	category := &Category{
-		Id: c.Id,
+	return &Category{
+		Id:                c.Id,
+		CategoryTypeRefId: c.CategoryTypeRefId,
+		Name:              c.Name,
 	}
-	if c.CategoryTypeRefId.Valid {
-		category.CategoryTypeRefId = c.CategoryTypeRefId.Int
-	}
-	if c.Name.Valid {
-		category.Name = c.Name.String
-	}
-	return category
 }
 
-// CreateCategory struct for creating a new category
 type CreateCategory struct {
 	CategoryTypeRefId int    `json:"category_type_ref_id" validate:"required,greater_than_zero"`
 	Name              string `json:"name" validate:"required"`
 }
 
-// ToCategory converts the CreateCategory to a Category.
 func (c *CreateCategory) ToCategory() *Category {
-	category := &Category{
+	return &Category{
 		Name:              c.Name,
 		CategoryTypeRefId: c.CategoryTypeRefId,
 	}
-	return category
 }
 
 func (c *CreateCategory) Validate() error {
@@ -117,7 +102,6 @@ type PaginatedCategories struct {
 	Pagination *Pagination `json:"pagination"`
 }
 
-// CategoryFilters contains the category filters.
 type CategoryFilters struct {
 	CategoryNameIn         []string `query:"category_name_in" json:"category_name_in"`
 	CategoryTypeNameIn     []string `query:"category_type_name_in" json:"category_type_name_in"`
@@ -127,8 +111,6 @@ type CategoryFilters struct {
 	PaginationQueryFilters `swaggerignore:"true"`
 }
 
-// Validate validates the pagination parameters,
-// and the filters provided.
 func (c *CategoryFilters) Validate() error {
 	if err := c.ValidatePagination(); err != nil {
 		return fmt.Errorf("pagination: %v", err)

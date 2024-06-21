@@ -201,6 +201,140 @@ type testCaseUpdateClickTrackers struct {
 	assertions      func(t *testing.T, params *model.UpdateClickTracker, clicktracker *model.ClickTracker, err error)
 }
 
+type argsDeleteClickTrackers struct {
+	ctx    context.Context
+	params *model.DeleteClickTracker
+}
+
+type testCaseDeleteClickTrackers struct {
+	name            string
+	getDependencies func(t *testing.T) (*dependencies, func(ignoreErrors ...bool))
+	args            argsDeleteClickTrackers
+	mutations       func(t *testing.T, db *sqlx.DB)
+	assertions      func(t *testing.T, params *model.DeleteClickTracker, err error)
+}
+
+func getTestCasesDeleteClickTracker() []testCaseDeleteClickTrackers {
+	return []testCaseDeleteClickTrackers{
+		{
+			name: "success",
+			args: argsDeleteClickTrackers{
+				ctx: context.TODO(),
+				params: &model.DeleteClickTracker{
+					Id: 1,
+				},
+			},
+			getDependencies: getConcreteDependencies,
+			mutations: func(t *testing.T, db *sqlx.DB) {
+
+			},
+			assertions: func(t *testing.T, params *model.DeleteClickTracker, err error) {
+				require.NoError(t, err, "unexpected error")
+				assert.Equal(t, params.Id, 1)
+			},
+		},
+		//{
+		//	name: "success-name-only",
+		//	args: argsUpdateClickTrackers{
+		//		ctx: context.TODO(),
+		//		params: &model.UpdateClickTracker{
+		//			Id: 1,
+		//			Name: null.String{
+		//				String: "Demby",
+		//				Valid:  true,
+		//			},
+		//		},
+		//	},
+		//	getDependencies: getConcreteDependencies,
+		//	mutations: func(t *testing.T, db *sqlx.DB) {
+		//
+		//	},
+		//	assertions: func(t *testing.T, params *model.UpdateClickTracker, clicktracker *model.ClickTracker, err error) {
+		//		require.NoError(t, err, "unexpected error")
+		//		require.NotNil(t, clicktracker, "unexpected nil click trackers")
+		//		assert.Equal(t, params.Name.String, clicktracker.Name, "expected name to be equal")
+		//	},
+		//},
+		//{
+		//	name: "success-click-trackers-set-id-only",
+		//	args: argsUpdateClickTrackers{
+		//		ctx: context.TODO(),
+		//		params: &model.UpdateClickTracker{
+		//			Id: 1,
+		//			ClickTrackerSetId: null.Int{
+		//				Int:   3,
+		//				Valid: true,
+		//			},
+		//		},
+		//	},
+		//	getDependencies: getConcreteDependencies,
+		//	mutations: func(t *testing.T, db *sqlx.DB) {
+		//
+		//	},
+		//	assertions: func(t *testing.T, params *model.UpdateClickTracker, clicktracker *model.ClickTracker, err error) {
+		//		require.NoError(t, err, "unexpected error")
+		//		require.NotNil(t, clicktracker, "unexpected nil click trackers")
+		//		assert.Equal(t, params.Id, clicktracker.Id, "expected id to be equal")
+		//		assert.Equal(t, params.ClickTrackerSetId.Int, clicktracker.ClickTrackerSetId, "expected name to be equal")
+		//	},
+		//},
+		//{
+		//	name: "fail-mock",
+		//	args: argsUpdateClickTrackers{
+		//		ctx: context.TODO(),
+		//		params: &model.UpdateClickTracker{
+		//			Id: 1,
+		//			ClickTrackerSetId: null.Int{
+		//				Int:   3,
+		//				Valid: true,
+		//			},
+		//		},
+		//	},
+		//	getDependencies: func(t *testing.T) (*dependencies, func(ignoreErrors ...bool)) {
+		//		cleanup := func(ignoreErrors ...bool) {}
+		//
+		//		mockTxProvider := persistencefakes.FakeTransactionProvider{}
+		//		mockTxProvider.TxReturns(nil, errors.New(mockDbReturnsErr))
+		//
+		//		return &dependencies{
+		//			Persistor:  &clicktrackerlogicfakes.FakePersistor{},
+		//			TxProvider: &mockTxProvider,
+		//			Logger:     mockLogger,
+		//			Cleanup:    cleanup,
+		//		}, cleanup
+		//	},
+		//	mutations: func(t *testing.T, db *sqlx.DB) {
+		//
+		//	},
+		//	assertions: func(t *testing.T, params *model.UpdateClickTracker, clicktracker *model.ClickTracker, err error) {
+		//		assert.Error(t, err, "unexpected error")
+		//		assert.Nil(t, clicktracker, "unexpected nil click trackers")
+		//	},
+		//},
+		//{
+		//	name: "fail-internal-server-error",
+		//	args: argsUpdateClickTrackers{
+		//		ctx: context.TODO(),
+		//		params: &model.UpdateClickTracker{
+		//			Id: 1,
+		//			ClickTrackerSetId: null.Int{
+		//				Int:   3,
+		//				Valid: true,
+		//			},
+		//		},
+		//	},
+		//	getDependencies: getConcreteDependencies,
+		//	mutations: func(t *testing.T, db *sqlx.DB) {
+		//		testhelper.DropTable(t, db, mysqlmodel.TableNames.CapturePages)
+		//	},
+		//	assertions: func(t *testing.T, params *model.UpdateClickTracker, clicktracker *model.ClickTracker, err error) {
+		//		assert.Error(t, err, "unexpected error")
+		//		assert.Nil(t, clicktracker, "unexpected nil click trackers")
+		//	},
+		//},
+	}
+}
+
 func getTestCasesUpdateClickTracker() []testCaseUpdateClickTrackers {
 	return []testCaseUpdateClickTrackers{
 		//{
@@ -350,6 +484,27 @@ func TestService_UpdateClickTracker(t *testing.T) {
 
 			clicktracker, err := svc.UpdateClickTracker(tt.args.ctx, tt.args.params)
 			tt.assertions(t, tt.args.params, clicktracker, err)
+		})
+	}
+}
+
+func TestService_DeleteClickTracker(t *testing.T) {
+	for _, tt := range getTestCasesDeleteClickTracker() {
+		t.Run(tt.name, func(t *testing.T) {
+			_dependencies, cleanup := tt.getDependencies(t)
+			defer cleanup()
+
+			svc, err := New(&Config{
+				TxProvider: _dependencies.TxProvider,
+				Logger:     _dependencies.Logger,
+				Persistor:  _dependencies.Persistor,
+			})
+			require.NoError(t, err, "unexpected new error")
+
+			tt.mutations(t, _dependencies.Db)
+
+			err = svc.DeleteClickTracker(tt.args.ctx, tt.args.params)
+			tt.assertions(t, tt.args.params, err)
 		})
 	}
 }

@@ -24,6 +24,36 @@ type Service struct {
 	cfg *Config
 }
 
+// UpdateClickTracker updates an existing click tracker.
+func (i *Service) UpdateClickTracker(ctx context.Context, params *model.UpdateClickTracker) (*model.ClickTracker, error) {
+	tx, err := i.cfg.TxProvider.Tx(ctx)
+	if err != nil {
+		return nil, errs.New(&errs.Cfg{
+			StatusCode: http.StatusInternalServerError,
+			Err:        fmt.Errorf("get db: %v", err),
+		})
+	}
+	defer tx.Rollback(ctx)
+
+	if err := params.Validate(); err != nil {
+		return nil, fmt.Errorf("validate: %w", err)
+	}
+
+	if params.ClickTrackerSetId.Valid {
+		if err := i.validateClickTrackerTypeId(ctx, tx, params.ClickTrackerSetId.Int); err != nil {
+			return nil, fmt.Errorf("click_tracker_set_id: %w", err)
+		}
+	}
+
+	clicktracker, err := i.cfg.Persistor.UpdateClickTrackers(ctx, tx, params)
+	//tx.Commit(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("update click tracker: %w", err)
+	}
+
+	return clicktracker, nil
+}
+
 func (i *Config) Validate() error {
 	return validationutils.Validate(i)
 }
@@ -69,34 +99,34 @@ func (i *Service) ListClickTrackers(
 }
 
 // UpdateClickTracker updates an existing click tracker.
-func (i *Service) UpdateClickTracker(ctx context.Context, params *model.UpdateClickTracker) (*model.ClickTracker, error) {
-	tx, err := i.cfg.TxProvider.Tx(ctx)
-	if err != nil {
-		return nil, errs.New(&errs.Cfg{
-			StatusCode: http.StatusInternalServerError,
-			Err:        fmt.Errorf("get db: %v", err),
-		})
-	}
-	defer tx.Rollback(ctx)
-
-	if err := params.Validate(); err != nil {
-		return nil, fmt.Errorf("validate: %w", err)
-	}
-
-	if params.ClickTrackerSetId.Valid {
-		if err := i.validateClickTrackerTypeId(ctx, tx, params.ClickTrackerSetId.Int); err != nil {
-			return nil, fmt.Errorf("click_tracker_set_id: %w", err)
-		}
-	}
-
-	clicktracker, err := i.cfg.Persistor.UpdateClickTrackers(ctx, tx, params)
-	//tx.Commit(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("update click tracker: %w", err)
-	}
-
-	return clicktracker, nil
-}
+//func (i *Service) UpdateClickTracker(ctx context.Context, params *model.UpdateClickTracker) (*model.ClickTracker, error) {
+//	tx, err := i.cfg.TxProvider.Tx(ctx)
+//	if err != nil {
+//		return nil, errs.New(&errs.Cfg{
+//			StatusCode: http.StatusInternalServerError,
+//			Err:        fmt.Errorf("get db: %v", err),
+//		})
+//	}
+//	defer tx.Rollback(ctx)
+//
+//	if err := params.Validate(); err != nil {
+//		return nil, fmt.Errorf("validate: %w", err)
+//	}
+//
+//	if params.ClickTrackerSetId.Valid {
+//		if err := i.validateClickTrackerTypeId(ctx, tx, params.ClickTrackerSetId.Int); err != nil {
+//			return nil, fmt.Errorf("click_tracker_set_id: %w", err)
+//		}
+//	}
+//
+//	clickTracker, err := i.cfg.Persistor.UpdateClickTrackers(ctx, tx, params)
+//	//tx.Commit(ctx)
+//	if err != nil {
+//		return nil, fmt.Errorf("update click tracker: %w", err)
+//	}
+//
+//	return clickTracker, nil
+//}
 
 func (i *Service) CreateClickTracker(ctx context.Context, params *model.CreateClickTracker) (*model.ClickTracker, error) {
 	if err := params.Validate(); err != nil {
@@ -182,8 +212,7 @@ func (s *Service) DeleteClickTracker(ctx context.Context, params *model.DeleteCl
 	}
 	defer tx.Rollback(ctx)
 
-	fmt.Println("the params id ------------------- ", params.ID, params.CLICKS)
-	err = s.cfg.Persistor.DeleteClickTracker(ctx, tx, params.ID, params.CLICKS)
+	err = s.cfg.Persistor.DeleteClickTracker(ctx, tx, params.Id)
 	if err != nil {
 		return errs.New(&errs.Cfg{
 			StatusCode: http.StatusInternalServerError,

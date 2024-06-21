@@ -349,3 +349,81 @@ func Test_UpdateClickTracker_Fail(t *testing.T) {
 	assert.Contains(t, err.Error(), "Duplicate entry")
 	assert.Nil(t, clt, "unexpected non nil entry")
 }
+
+func Test_DeleteClickTracker_Success(t *testing.T) {
+	db, cp, cleanup := mysqlhelper.TestGetMockMariaDB(t)
+	defer cleanup()
+
+	cfg := &Config{
+		Logger:        testLogger,
+		QueryTimeouts: testQueryTimeouts,
+	}
+
+	m, err := New(cfg)
+	require.NoError(t, err, "unexpected error")
+	require.NotNil(t, m, "unexpected nil")
+
+	txHandler, err := mysqltx.New(&mysqltx.Config{
+		Logger:       testLogger,
+		Db:           db,
+		DatabaseName: cp.Database,
+	})
+	require.NoError(t, err, "unexpected error creating the tx handler")
+
+	txHandlerDb, err := txHandler.Db(testCtx)
+	require.NoError(t, err, "unexpected error fetching the db from the tx handler")
+	require.NotNil(t, txHandlerDb, "unexpected nil tx handler db")
+
+	paginatedClickTracker, err := m.GetClickTrackers(testCtx, txHandlerDb, nil)
+	require.NoError(t, err, "unexpected error fetching the click trackers from the database")
+	require.NotNil(t, txHandlerDb, "unexpected nil click trackers")
+	require.True(t, len(paginatedClickTracker.ClickTrackers) > 0, "unexpected empty click trackers")
+
+	deleteClickTracker := model.DeleteClickTracker{
+		Id: 1,
+	}
+
+	id := deleteClickTracker.Id
+
+	err = m.DeleteClickTracker(testCtx, txHandlerDb, id)
+	require.NoError(t, err, "unexpected error updating a conflicting click trackers from the database")
+}
+
+func Test_DeleteClickTracker_Fail(t *testing.T) {
+	db, cp, cleanup := mysqlhelper.TestGetMockMariaDB(t)
+	defer cleanup()
+
+	cfg := &Config{
+		Logger:        testLogger,
+		QueryTimeouts: testQueryTimeouts,
+	}
+
+	m, err := New(cfg)
+	require.NoError(t, err, "unexpected error")
+	require.NotNil(t, m, "unexpected nil")
+
+	txHandler, err := mysqltx.New(&mysqltx.Config{
+		Logger:       testLogger,
+		Db:           db,
+		DatabaseName: cp.Database,
+	})
+	require.NoError(t, err, "unexpected error creating the tx handler")
+
+	txHandlerDb, err := txHandler.Db(testCtx)
+	require.NoError(t, err, "unexpected error fetching the db from the tx handler")
+	require.NotNil(t, txHandlerDb, "unexpected nil tx handler db")
+
+	paginatedClickTracker, err := m.GetClickTrackers(testCtx, txHandlerDb, nil)
+	require.NoError(t, err, "unexpected error fetching the click tracker from the database")
+	require.NotNil(t, txHandlerDb, "unexpected nil click tracker")
+	require.True(t, len(paginatedClickTracker.ClickTrackers) > 0, "unexpected empty click tracker")
+
+	deleteClickTracker := model.DeleteClickTracker{
+		Id: 444,
+	}
+
+	id := deleteClickTracker.Id
+
+	err = m.DeleteClickTracker(testCtx, txHandlerDb, id)
+	require.Error(t, err, "unexpected error: invalid id passed")
+}

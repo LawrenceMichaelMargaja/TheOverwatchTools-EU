@@ -23,14 +23,10 @@ func (m *Repository) GetClickTrackers(ctx context.Context, tx persistence.Transa
 		return nil, fmt.Errorf("extract context executor: %v", err)
 	}
 
-	fmt.Println("the filters ---- ", strutil.GetAsJson(filters))
-
 	res, err := m.getClickTrackers(ctx, ctxExec, filters)
 	if err != nil {
 		return nil, fmt.Errorf("read clickTrackers: %v", err)
 	}
-
-	fmt.Println("the res -- ", strutil.GetAsJson(res))
 
 	return res, nil
 }
@@ -108,8 +104,6 @@ func (m *Repository) getClickTrackers(
 
 	ctx, cancel := context.WithTimeout(ctx, m.cfg.QueryTimeouts.Query)
 	defer cancel()
-
-	fmt.Println("the id ----- ", strutil.GetAsJson(filters.ClickTrackerSetIdIn))
 
 	queryMods := []qm.QueryMod{
 		qm.InnerJoin(
@@ -289,8 +283,6 @@ func (m *Repository) getClickTrackers(
 		}
 	}
 
-	fmt.Println("the queryMods for CT ----- ", queryMods)
-
 	q := mysqlmodel.ClickTrackers(queryMods...)
 	totalCount, err := q.Count(ctx, ctxExec)
 	if err != nil {
@@ -460,20 +452,27 @@ func (m *Repository) DeleteClickTracker(
 	ctx context.Context,
 	tx persistence.TransactionHandler,
 	id int,
-	clicks int,
 ) error {
-	entry := &mysqlmodel.ClickTracker{ID: id, Clicks: clicks}
-	ctxExec, err := mysqltx.GetCtxExecutor(tx)
+
+	res, err := m.GetClickTrackerById(ctx, tx, id)
 	if err != nil {
-		return fmt.Errorf("get ctx exec: %v", err)
-	}
-	fmt.Println("22222222222222222222222222222222 entry", strutil.GetAsJson(entry.Clicks))
-
-	entry = &mysqlmodel.ClickTracker{ID: id, Clicks: 4}
-	fmt.Println("1111111111111111111111 entry", strutil.GetAsJson(entry.Clicks))
-	if _, err = entry.Update(ctx, ctxExec, boil.Whitelist("clicks")); err != nil {
-		return fmt.Errorf("delete: %w", err)
+		return fmt.Errorf("delete error: %w", err)
 	}
 
-	return nil
+	if res.Clicks == 0 {
+		return fmt.Errorf("this is already deleted")
+	} else {
+		entry := &mysqlmodel.ClickTracker{ID: id}
+		ctxExec, err := mysqltx.GetCtxExecutor(tx)
+		if err != nil {
+			return fmt.Errorf("get ctx exec: %v", err)
+		}
+
+		entry = &mysqlmodel.ClickTracker{ID: id, Clicks: 0}
+		if _, err = entry.Update(ctx, ctxExec, boil.Whitelist("clicks")); err != nil {
+			return fmt.Errorf("delete: %w", err)
+		}
+
+		return nil
+	}
 }

@@ -146,8 +146,8 @@ func (i *Service) UpdateCategory(ctx context.Context, params *model.UpdateCatego
 		return nil, fmt.Errorf("validate: %w", err)
 	}
 
-	if params.CategoryTypeRefId.Valid {
-		if err := i.validateCategoryTypeId(ctx, tx, params.CategoryTypeRefId.Int); err != nil {
+	if params.CategoryTypeRefId > 0 {
+		if err := i.validateCategoryTypeId(ctx, tx, params.CategoryTypeRefId); err != nil {
 			return nil, fmt.Errorf("category_type_id: %w", err)
 		}
 	}

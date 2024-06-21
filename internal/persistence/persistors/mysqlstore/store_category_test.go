@@ -15,7 +15,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/volatiletech/null"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"strings"
 	"testing"
@@ -300,54 +299,6 @@ func Test_ReadCategories(t *testing.T) {
 //	assert.Equal(t, paginatedCategories.Categories[0].Name+" sample_category", cat.Name)
 //}
 
-func Test_UpdateCategories_Success(t *testing.T) {
-	db, cp, cleanup := mysqlhelper.TestGetMockMariaDB(t)
-	defer cleanup()
-
-	cfg := &Config{
-		Logger:        testLogger,
-		QueryTimeouts: testQueryTimeouts,
-	}
-
-	m, err := New(cfg)
-	require.NoError(t, err, "unexpected error")
-	require.NotNil(t, m, "unexpected nil")
-
-	txHandler, err := mysqltx.New(&mysqltx.Config{
-		Logger:       testLogger,
-		Db:           db,
-		DatabaseName: cp.Database,
-	})
-	require.NoError(t, err, "unexpected error creating the tx handler")
-
-	txHandlerDb, err := txHandler.Db(testCtx)
-	require.NoError(t, err, "unexpected error fetching the db from the tx handler")
-	require.NotNil(t, txHandlerDb, "unexpected nil tx handler db")
-
-	paginatedCategories, err := m.GetCategories(testCtx, txHandlerDb, nil)
-	require.NoError(t, err, "unexpected error fetching the categories from the database")
-	require.NotNil(t, paginatedCategories, "unexpected nil categories")
-	require.True(t, len(paginatedCategories.Categories) > 0, "unexpected empty categories")
-
-	updateCategory := model.UpdateCategory{
-		Id: 1,
-		CategoryTypeRefId: null.Int{
-			Int:   paginatedCategories.Categories[0].CategoryTypeRefId,
-			Valid: true,
-		},
-		Name: null.String{
-			String: paginatedCategories.Categories[0].Name + " sample_category",
-			Valid:  true,
-		},
-	}
-
-	fmt.Println("UpdateCategory params:", strutil.GetAsJson(&updateCategory))
-
-	cat, err := m.UpdateCategory(testCtx, txHandlerDb, &updateCategory)
-	require.NoError(t, err, "unexpected error updating a conflicting category from the database")
-	assert.Equal(t, paginatedCategories.Categories[0].Name+" sample_category", cat.Name)
-}
-
 type deleteCategoryTestCase struct {
 	name       string
 	id         int
@@ -577,6 +528,48 @@ func Test_AddCategory(t *testing.T) {
 	}
 }
 
+func Test_UpdateCategories_Success(t *testing.T) {
+	db, cp, cleanup := mysqlhelper.TestGetMockMariaDB(t)
+	defer cleanup()
+
+	cfg := &Config{
+		Logger:        testLogger,
+		QueryTimeouts: testQueryTimeouts,
+	}
+
+	m, err := New(cfg)
+	require.NoError(t, err, "unexpected error")
+	require.NotNil(t, m, "unexpected nil")
+
+	txHandler, err := mysqltx.New(&mysqltx.Config{
+		Logger:       testLogger,
+		Db:           db,
+		DatabaseName: cp.Database,
+	})
+	require.NoError(t, err, "unexpected error creating the tx handler")
+
+	txHandlerDb, err := txHandler.Db(testCtx)
+	require.NoError(t, err, "unexpected error fetching the db from the tx handler")
+	require.NotNil(t, txHandlerDb, "unexpected nil tx handler db")
+
+	paginatedCategories, err := m.GetCategories(testCtx, txHandlerDb, nil)
+	require.NoError(t, err, "unexpected error fetching the categories from the database")
+	require.NotNil(t, paginatedCategories, "unexpected nil categories")
+	require.True(t, len(paginatedCategories.Categories) > 0, "unexpected empty categories")
+
+	updateCategory := model.UpdateCategory{
+		Id:                1,
+		CategoryTypeRefId: 1,
+		Name:              "Wash Kho sahbi!",
+	}
+
+	fmt.Println("UpdateCategory params:", strutil.GetAsJson(&updateCategory))
+
+	cat, err := m.UpdateCategory(testCtx, txHandlerDb, &updateCategory)
+	require.NoError(t, err, "unexpected error updating a conflicting category from the database")
+	assert.Equal(t, paginatedCategories.Categories[0].Name+" sample_category", cat.Name)
+}
+
 func Test_UpdateCategories_Fail(t *testing.T) {
 	db, cp, cleanup := mysqlhelper.TestGetMockMariaDB(t)
 	defer cleanup()
@@ -607,15 +600,9 @@ func Test_UpdateCategories_Fail(t *testing.T) {
 	require.True(t, len(paginatedCategories.Categories) > 0, "unexpected empty categories")
 
 	updateCategory := model.UpdateCategory{
-		Id: paginatedCategories.Categories[1].Id,
-		CategoryTypeRefId: null.Int{
-			Int:   paginatedCategories.Categories[0].CategoryTypeRefId,
-			Valid: true,
-		},
-		Name: null.String{
-			String: paginatedCategories.Categories[0].Name,
-			Valid:  true,
-		},
+		Id:                323123,
+		CategoryTypeRefId: 22,
+		Name:              "Wash Kho sahbi!",
 	}
 
 	cat, err := m.UpdateCategory(testCtx, txHandlerDb, &updateCategory)

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"github.com/dembygenesis/local.tools/internal/model"
 	"github.com/dembygenesis/local.tools/internal/utilities/errs"
 	"github.com/gofiber/fiber/v2"
@@ -66,8 +65,8 @@ func (a *Api) UpdateClickTracker(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&body); err != nil {
 		return ctx.Status(http.StatusBadRequest).JSON(errs.ToArr(err))
 	}
-	clicktracker, err := a.cfg.ClickTrackerService.UpdateClickTracker(ctx.Context(), &body)
-	return a.WriteResponse(ctx, http.StatusOK, clicktracker, err)
+	clickTracker, err := a.cfg.ClickTrackerService.UpdateClickTracker(ctx.Context(), &body)
+	return a.WriteResponse(ctx, http.StatusOK, clickTracker, err)
 }
 
 // DeleteClickTracker deletes a click trackers by ID
@@ -89,29 +88,12 @@ func (a *Api) DeleteClickTracker(ctx *fiber.Ctx) error {
 		return ctx.Status(http.StatusBadRequest).JSON(errs.ToArr(err))
 	}
 
-	deleteParams := &model.DeleteClickTracker{ID: clickTrackerId}
-<<<<<<< HEAD
-	clickParams := &model.ClickTracker{}
-	clickT := clickParams.Clicks
-=======
->>>>>>> upstream/eu-capture-pages
-
-	fmt.Println("the clickT ---- ", clickT)
+	deleteParams := &model.DeleteClickTracker{Id: clickTrackerId}
 
 	err = a.cfg.ClickTrackerService.DeleteClickTracker(ctx.Context(), deleteParams)
 	if err != nil {
 		return ctx.Status(http.StatusInternalServerError).JSON(errs.ToArr(err))
 	}
-	
-	return ctx.JSON("del")
 
-<<<<<<< HEAD
-	if clickT == 1 {
-		return ctx.JSON("delete it!")
-	} else {
-		fmt.Println("here???")
-		return ctx.JSON("Already del")
-	}
-=======
->>>>>>> upstream/eu-capture-pages
+	return ctx.Status(http.StatusNoContent).Send(nil)
 }
