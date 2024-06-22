@@ -6,7 +6,8 @@ import (
 	"github.com/dembygenesis/local.tools/internal/sysconsts"
 	"github.com/dembygenesis/local.tools/internal/utilities/errs"
 	"github.com/dembygenesis/local.tools/internal/utilities/validationutils"
-	"github.com/volatiletech/null/v8"
+	// "github.com/volatiletech/null/v8"
+	"github.com/volatiletech/null"
 	"strings"
 )
 
@@ -35,7 +36,7 @@ func (c *UpdateCategory) Validate() error {
 		if c.CategoryTypeRefId.Int > 0 {
 			hasAtLeastOneUpdateParameters = true
 		} else {
-			errList.Add(sysconsts.ErrCategoryTypeRefIdInvalid)
+			errList.Add(sysconsts.ErrCapturePageSetId)
 		}
 	}
 
@@ -54,17 +55,33 @@ func (c *UpdateCategory) Validate() error {
 	return nil
 }
 
+// ToCategory converts the UpdateCategory to a Category.
+func (c *UpdateCategory) ToCategory() *Category {
+	category := &Category{
+		Id: c.Id,
+	}
+	if c.CategoryTypeRefId.Valid {
+		category.CategoryTypeRefId = c.CategoryTypeRefId.Int
+	}
+	if c.Name.Valid {
+		category.Name = c.Name.String
+	}
+	return category
+}
+
 // CreateCategory struct for creating a new category
 type CreateCategory struct {
 	CategoryTypeRefId int    `json:"category_type_ref_id" validate:"required,greater_than_zero"`
 	Name              string `json:"name" validate:"required"`
 }
 
+// ToCategory converts the CreateCategory to a Category.
 func (c *CreateCategory) ToCategory() *Category {
-	return &Category{
+	category := &Category{
 		Name:              c.Name,
 		CategoryTypeRefId: c.CategoryTypeRefId,
 	}
+	return category
 }
 
 func (c *CreateCategory) Validate() error {
@@ -101,6 +118,7 @@ type PaginatedCategories struct {
 	Pagination *Pagination `json:"pagination"`
 }
 
+// CategoryFilters contains the category filters.
 type CategoryFilters struct {
 	CategoryNameIn         []string `query:"category_name_in" json:"category_name_in"`
 	CategoryTypeNameIn     []string `query:"category_type_name_in" json:"category_type_name_in"`
@@ -110,6 +128,8 @@ type CategoryFilters struct {
 	PaginationQueryFilters `swaggerignore:"true"`
 }
 
+// Validate validates the pagination parameters,
+// and the filters provided.
 func (c *CategoryFilters) Validate() error {
 	if err := c.ValidatePagination(); err != nil {
 		return fmt.Errorf("pagination: %v", err)

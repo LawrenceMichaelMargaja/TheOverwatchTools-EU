@@ -67,8 +67,8 @@ func (a *Api) UpdateClickTracker(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&body); err != nil {
 		return ctx.Status(http.StatusBadRequest).JSON(errs.ToArr(err))
 	}
-	clickTracker, err := a.cfg.ClickTrackerService.UpdateClickTracker(ctx.Context(), &body)
-	return a.WriteResponse(ctx, http.StatusOK, clickTracker, err)
+	clicktracker, err := a.cfg.ClickTrackerService.UpdateClickTracker(ctx.Context(), &body)
+	return a.WriteResponse(ctx, http.StatusOK, clicktracker, err)
 }
 
 // DeleteClickTracker deletes a click trackers by ID
@@ -90,7 +90,7 @@ func (a *Api) DeleteClickTracker(ctx *fiber.Ctx) error {
 		return ctx.Status(http.StatusBadRequest).JSON(errs.ToArr(err))
 	}
 
-	deleteParams := &model.DeleteClickTracker{Id: clickTrackerId}
+	deleteParams := &model.DeleteClickTracker{ID: clickTrackerId}
 
 	isDeleted, err := a.cfg.ClickTrackerService.GetClickTrackerByID(ctx.Context(), clickTrackerId)
 	fmt.Println(strutil.GetAsJson("del cli ------------------------------------ ", isDeleted.Clicks))
@@ -141,4 +141,5 @@ func (a *Api) RestoreClickTracker(ctx *fiber.Ctx) error {
 	} else {
 		return ctx.JSON("Res")
 	}
+
 }
