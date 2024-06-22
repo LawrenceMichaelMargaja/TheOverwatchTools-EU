@@ -13,7 +13,6 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"strings"
 )
 
 // DropCategoryTable drops the category table (for testing purposes).
@@ -41,64 +40,6 @@ func (m *Repository) DropCategoryTable(
 	return nil
 }
 
-// MapMysqlModelCategoryToModel maps a *mysqlmodel.Category to a *model.Category.
-func MapMysqlModelCategoryToModel(mysqlCat *mysqlmodel.Category) *model.Category {
-	return &model.Category{
-		Id:                mysqlCat.ID,
-		CategoryTypeRefId: mysqlCat.CategoryTypeRefID,
-		Name:              mysqlCat.Name,
-		// Assuming you have a way to get CategoryType from CategoryTypeRefID or other sources
-		// If it's a direct mapping, you can set it directly
-		CategoryType: "", // Replace with actual mapping logic if needed
-	}
-}
-
-//	func (m *Repository) UpdateCategory(ctx context.Context, tx persistence.TransactionHandler, params *model.UpdateCategory) (*model.Category, error) {
-//		if params == nil {
-//			return nil, ErrCatNil
-//		}
-//		ctxExec, err := mysqltx.GetCtxExecutor(tx)
-//		if err != nil {
-//			return nil, fmt.Errorf("extract context executor: %v", err)
-//		}
-//
-//		entry := &mysqlmodel.Category{ID: params.Id}
-//		cols := []string{mysqlmodel.CategoryColumns.ID}
-//
-//		fmt.Println("====== entry UpdateCategory:", strutil.GetAsJson(entry))
-//		fmt.Println("====== params UpdateCategory:", strutil.GetAsJson(params))
-//
-//		if params.CategoryTypeRefId.Valid {
-//			entry.CategoryTypeRefID = params.CategoryTypeRefId.Int
-//			cols = append(cols, mysqlmodel.CategoryColumns.CategoryTypeRefID)
-//		}
-//		if params.Name.Valid {
-//			entry.Name = params.Name.String
-//			cols = append(cols, mysqlmodel.CategoryColumns.Name)
-//		}
-//
-//		_, err = entry.Update(ctx, ctxExec, boil.Whitelist(cols...))
-//		//tx.Commit(ctx)
-//		if err != nil {
-//			return nil, fmt.Errorf("update failed: %v", err)
-//		}
-//
-//		category, err := m.GetCategoryById(ctx, tx, entry.ID)
-//		if err != nil {
-//			return nil, fmt.Errorf("get category by id: %v", err)
-//		}
-//
-//		fmt.Println("the ctx --- ", strutil.GetAsJson(&ctx))
-//
-//		err2 := tx.Commit(ctx)
-//		if err2 != nil {
-//			fmt.Println("Error during transaction commit")
-//			return nil, fmt.Errorf("commit failed: %v", err2)
-//		}
-//
-//		return category, nil
-//	}
-
 func (m *Repository) UpdateCategory(ctx context.Context, tx persistence.TransactionHandler, params *model.UpdateCategory) (*model.Category, error) {
 	if params == nil {
 		return nil, ErrCatNil
@@ -111,45 +52,30 @@ func (m *Repository) UpdateCategory(ctx context.Context, tx persistence.Transact
 	entry := &mysqlmodel.Category{ID: params.Id}
 	cols := []string{mysqlmodel.CategoryColumns.ID}
 
-	fmt.Println("====== entry before update:", strutil.GetAsJson(entry))
-	fmt.Println("====== params UpdateCategory:", strutil.GetAsJson(params))
-
-	if params.CategoryTypeRefId > 0 {
-		entry.CategoryTypeRefID = params.CategoryTypeRefId
+	if params.CategoryTypeRefId.Valid {
+		entry.CategoryTypeRefID = params.CategoryTypeRefId.Int
 		cols = append(cols, mysqlmodel.CategoryColumns.CategoryTypeRefID)
 	}
-	if strings.TrimSpace(params.Name) != "" {
-		entry.Name = params.Name
+	if params.Name.Valid {
+		entry.Name = params.Name.String
 		cols = append(cols, mysqlmodel.CategoryColumns.Name)
 	}
-
-	fmt.Println("====== entry after update:", strutil.GetAsJson(entry))
-	fmt.Println("====== columns to update:", cols)
 
 	_, err = entry.Update(ctx, ctxExec, boil.Whitelist(cols...))
 	if err != nil {
 		return nil, fmt.Errorf("update failed: %v", err)
 	}
 
-	// Reload the category to get the latest state
-	err = entry.Reload(ctx, ctxExec)
+	category, err := m.GetCategoryById(ctx, tx, entry.ID)
+	tx.Commit(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("reload failed: %v", err)
+		return nil, fmt.Errorf("get category by id: %v", err)
 	}
 
-	fmt.Println("Entry after reload:", strutil.GetAsJson(entry))
-
-	// Commit the transaction if required
-	err = tx.Commit(ctx)
-	if err != nil {
-		fmt.Println("Error during transaction commit:", err)
-		return nil, fmt.Errorf("commit failed: %v", err)
-	}
-
-	fmt.Println("Transaction committed successfully")
-
-	// Map mysqlmodel.Category to model.Category
-	category := MapMysqlModelCategoryToModel(entry)
+	//if err := tx.Commit(ctx); err != nil {
+	//	fmt.Println("Error during transaction commit")
+	//	return nil, fmt.Errorf("commit failed: %v", err)
+	//}
 
 	return category, nil
 }
@@ -187,7 +113,6 @@ func (m *Repository) CreateCategory(ctx context.Context, tx persistence.Transact
 		Name:              category.Name,
 		CategoryTypeRefID: category.CategoryTypeRefId,
 	}
-
 	if err = entry.Insert(ctx, ctxExec, boil.Infer()); err != nil {
 		return nil, fmt.Errorf("insert category: %v", err)
 	}

@@ -10,11 +10,9 @@ import (
 	"github.com/dembygenesis/local.tools/internal/persistence/database_helpers/mysql/mysqltx"
 	"github.com/dembygenesis/local.tools/internal/sysconsts"
 	"github.com/dembygenesis/local.tools/internal/utilities/strutil"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"time"
 )
 
 func (m *Repository) GetClickTrackers(ctx context.Context, tx persistence.TransactionHandler, filters *model.ClickTrackerFilters) (*model.PaginatedClickTrackers, error) {
@@ -23,10 +21,14 @@ func (m *Repository) GetClickTrackers(ctx context.Context, tx persistence.Transa
 		return nil, fmt.Errorf("extract context executor: %v", err)
 	}
 
+	fmt.Println("the filters ---- ", strutil.GetAsJson(filters))
+
 	res, err := m.getClickTrackers(ctx, ctxExec, filters)
 	if err != nil {
 		return nil, fmt.Errorf("read clickTrackers: %v", err)
 	}
+
+	fmt.Println("the res -- ", strutil.GetAsJson(res))
 
 	return res, nil
 }
@@ -104,6 +106,8 @@ func (m *Repository) getClickTrackers(
 
 	ctx, cancel := context.WithTimeout(ctx, m.cfg.QueryTimeouts.Query)
 	defer cancel()
+
+	fmt.Println("the id ----- ", strutil.GetAsJson(filters.ClickTrackerSetIdIn))
 
 	queryMods := []qm.QueryMod{
 		qm.InnerJoin(
@@ -283,6 +287,8 @@ func (m *Repository) getClickTrackers(
 		}
 	}
 
+	fmt.Println("the queryMods for CT ----- ", queryMods)
+
 	q := mysqlmodel.ClickTrackers(queryMods...)
 	totalCount, err := q.Count(ctx, ctxExec)
 	if err != nil {
@@ -378,9 +384,9 @@ func (m *Repository) GetClickTrackerByName(ctx context.Context, tx persistence.T
 		return nil, fmt.Errorf("click tracker filtered by name: %v", err)
 	}
 
-	if paginated.Pagination.RowCount == 0 {
-		return nil, nil
-	}
+	//if paginated.Pagination.RowCount == 0 {
+	//	return nil, nil
+	//}
 
 	if paginated.Pagination.RowCount != 1 {
 		return nil, errors.New("expected exactly one click tracker entry")
@@ -425,14 +431,8 @@ func (m *Repository) AddClickTracker(ctx context.Context, tx persistence.Transac
 		return nil, fmt.Errorf("extract context executor: %v", err)
 	}
 
-	now := time.Now()
-
 	entry := &mysqlmodel.ClickTracker{
 		Name:              clickTracker.Name,
-		CreatedBy:         clickTracker.CreatedBy,
-		UpdatedBy:         clickTracker.UpdatedBy,
-		CreatedAt:         null.TimeFrom(now),
-		UpdatedAt:         null.TimeFrom(now),
 		ClickTrackerSetID: clickTracker.ClickTrackerSetId,
 	}
 	if err = entry.Insert(ctx, ctxExec, boil.Infer()); err != nil {
@@ -453,26 +453,39 @@ func (m *Repository) DeleteClickTracker(
 	tx persistence.TransactionHandler,
 	id int,
 ) error {
-
-	res, err := m.GetClickTrackerById(ctx, tx, id)
+	entry := &mysqlmodel.ClickTracker{ID: id}
+	ctxExec, err := mysqltx.GetCtxExecutor(tx)
 	if err != nil {
-		return fmt.Errorf("delete error: %w", err)
+		return fmt.Errorf("get ctx exec: %v", err)
 	}
 
-	if res.Clicks == 0 {
-		return fmt.Errorf("this is already deleted")
-	} else {
-		entry := &mysqlmodel.ClickTracker{ID: id}
-		ctxExec, err := mysqltx.GetCtxExecutor(tx)
-		if err != nil {
-			return fmt.Errorf("get ctx exec: %v", err)
-		}
+	fmt.Println("###################################################################", id)
+	//val := strutil.GetAsJson(m.GetClickTrackerById(ctx, tx, entry.ID))
+	//fmt.Println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$", m.GetClickTrackerById())
 
-		entry = &mysqlmodel.ClickTracker{ID: id, Clicks: 0}
-		if _, err = entry.Update(ctx, ctxExec, boil.Whitelist("clicks")); err != nil {
-			return fmt.Errorf("delete: %w", err)
-		}
-
-		return nil
+	entry = &mysqlmodel.ClickTracker{ID: id, Clicks: 0}
+	if _, err = entry.Update(ctx, ctxExec, boil.Whitelist("clicks")); err != nil {
+		return fmt.Errorf("delete: %w", err)
 	}
+
+	return nil
+}
+
+// RestoreClickTracker restores a click tracker.
+func (m *Repository) RestoreClickTracker(
+	ctx context.Context,
+	tx persistence.TransactionHandler,
+	id int,
+) error {
+	ctxExec, err := mysqltx.GetCtxExecutor(tx)
+	if err != nil {
+		return fmt.Errorf("get ctx exec: %v", err)
+	}
+
+	entry := &mysqlmodel.ClickTracker{ID: id, Clicks: 1}
+	if _, err = entry.Update(ctx, ctxExec, boil.Whitelist("clicks")); err != nil {
+		return fmt.Errorf("restore: %w", err)
+	}
+
+	return nil
 }

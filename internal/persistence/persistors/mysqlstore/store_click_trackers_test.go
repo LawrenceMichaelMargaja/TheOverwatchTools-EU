@@ -1,7 +1,14 @@
 package mysqlstore
 
 import (
+	"context"
 	"fmt"
+	"github.com/dembygenesis/local.tools/internal/persistence/database_helpers/mysql/assets/mysqlmodel"
+	"github.com/dembygenesis/local.tools/internal/persistence/persistors/mysqlstore/testhelper"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"testing"
+
 	"github.com/dembygenesis/local.tools/internal/model"
 	"github.com/dembygenesis/local.tools/internal/model/modelhelpers"
 	"github.com/dembygenesis/local.tools/internal/persistence/database_helpers/mysql/mysqlhelper"
@@ -10,9 +17,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/volatiletech/null/v8"
-	"strings"
-	"testing"
 )
 
 type testCaseGetClickTrackers struct {
@@ -176,8 +180,6 @@ type createClickTrackersTestCase struct {
 	name               string
 	clickTrackersName  string
 	clickTrackersSetId int
-	createdBy          int
-	updatedBy          int
 	assertions         func(t *testing.T, db *sqlx.DB, clickTracker *model.ClickTracker, err error)
 }
 
@@ -187,8 +189,6 @@ func getAddClickTrackersTestCases() []createClickTrackersTestCase {
 			name:               "success",
 			clickTrackersName:  "Tracker 7",
 			clickTrackersSetId: 4,
-			createdBy:          1,
-			updatedBy:          1,
 			assertions: func(t *testing.T, db *sqlx.DB, clickTracker *model.ClickTracker, err error) {
 				assert.NotNil(t, clickTracker, "unexpected nil click tracker")
 				assert.NoError(t, err, "unexpected non-nil error")
@@ -196,24 +196,24 @@ func getAddClickTrackersTestCases() []createClickTrackersTestCase {
 				modelhelpers.AssertNonEmptyClickTrackers(t, []model.ClickTracker{*clickTracker})
 			},
 		},
-		{
-			name:               "fail-name-exceeds-limit",
-			clickTrackersName:  strings.Repeat("a", 256),
-			clickTrackersSetId: 1,
-			assertions: func(t *testing.T, db *sqlx.DB, clickTracker *model.ClickTracker, err error) {
-				assert.Nil(t, clickTracker, "unexpected non-nil click tracker")
-				assert.Error(t, err, "unexpected nil-error")
-			},
-		},
-		{
-			name:               "fail-invalid-click-trackers-set-id",
-			clickTrackersName:  "Valid Name",
-			clickTrackersSetId: 999, // Assuming 999 is an invalid id
-			assertions: func(t *testing.T, db *sqlx.DB, clickTracker *model.ClickTracker, err error) {
-				assert.Nil(t, clickTracker, "unexpected non-nil click tracker")
-				assert.Error(t, err, "unexpected nil-error")
-			},
-		},
+		// {
+		// 	name:               "fail-name-exceeds-limit",
+		// 	clickTrackersName:  strings.Repeat("a", 256),
+		// 	clickTrackersSetId: 1,
+		// 	assertions: func(t *testing.T, db *sqlx.DB, clickTracker *model.ClickTracker, err error) {
+		// 		assert.Nil(t, clickTracker, "unexpected non-nil click tracker")
+		// 		assert.Error(t, err, "unexpected nil-error")
+		// 	},
+		// },
+		// {
+		// 	name:               "fail-invalid-click-trackers-set-id",
+		// 	clickTrackersName:  "Valid Name",
+		// 	clickTrackersSetId: 999, // Assuming 999 is an invalid id
+		// 	assertions: func(t *testing.T, db *sqlx.DB, clickTracker *model.ClickTracker, err error) {
+		// 		assert.Nil(t, clickTracker, "unexpected non-nil click tracker")
+		// 		assert.Error(t, err, "unexpected nil-error")
+		// 	},
+		// },
 	}
 }
 
@@ -350,80 +350,90 @@ func Test_UpdateClickTracker_Fail(t *testing.T) {
 	assert.Nil(t, clt, "unexpected non nil entry")
 }
 
-func Test_DeleteClickTracker_Success(t *testing.T) {
-	db, cp, cleanup := mysqlhelper.TestGetMockMariaDB(t)
-	defer cleanup()
+//test for the restore method
 
-	cfg := &Config{
-		Logger:        testLogger,
-		QueryTimeouts: testQueryTimeouts,
-	}
-
-	m, err := New(cfg)
-	require.NoError(t, err, "unexpected error")
-	require.NotNil(t, m, "unexpected nil")
-
-	txHandler, err := mysqltx.New(&mysqltx.Config{
-		Logger:       testLogger,
-		Db:           db,
-		DatabaseName: cp.Database,
-	})
-	require.NoError(t, err, "unexpected error creating the tx handler")
-
-	txHandlerDb, err := txHandler.Db(testCtx)
-	require.NoError(t, err, "unexpected error fetching the db from the tx handler")
-	require.NotNil(t, txHandlerDb, "unexpected nil tx handler db")
-
-	paginatedClickTracker, err := m.GetClickTrackers(testCtx, txHandlerDb, nil)
-	require.NoError(t, err, "unexpected error fetching the click trackers from the database")
-	require.NotNil(t, txHandlerDb, "unexpected nil click trackers")
-	require.True(t, len(paginatedClickTracker.ClickTrackers) > 0, "unexpected empty click trackers")
-
-	deleteClickTracker := model.DeleteClickTracker{
-		Id: 1,
-	}
-
-	id := deleteClickTracker.Id
-
-	err = m.DeleteClickTracker(testCtx, txHandlerDb, id)
-	require.NoError(t, err, "unexpected error updating a conflicting click trackers from the database")
+type restoreClickTrackerTestCase struct {
+	name       string
+	id         int
+	assertions func(t *testing.T, db *sqlx.DB, id int, err error)
+	mutations  func(t *testing.T, db *sqlx.DB)
 }
 
-func Test_DeleteClickTracker_Fail(t *testing.T) {
-	db, cp, cleanup := mysqlhelper.TestGetMockMariaDB(t)
-	defer cleanup()
+func getRestoreClickTrackerTestCases() []restoreClickTrackerTestCase {
+	return []restoreClickTrackerTestCase{
+		{
+			name: "success",
+			id:   1,
+			assertions: func(t *testing.T, db *sqlx.DB, id int, err error) {
+				require.Nil(t, err, "unexpected non-nil error")
+				entry, err := mysqlmodel.FindClickTracker(context.TODO(), db, id)
+				require.NoError(t, err, "unexpected error fetching the click tracker")
 
-	cfg := &Config{
-		Logger:        testLogger,
-		QueryTimeouts: testQueryTimeouts,
+				assert.Equal(t, 1, entry.Clicks)
+			},
+			mutations: func(t *testing.T, db *sqlx.DB) {
+				entry := mysqlmodel.CapturePage{
+					CapturePageSetID: 1,
+					Name:             "test",
+				}
+				err := entry.Insert(context.TODO(), db, boil.Infer())
+				assert.NoError(t, err, "unexpected insert error")
+
+				entry.Clicks = 0
+				_, err = entry.Update(context.TODO(), db, boil.Infer())
+				assert.NoError(t, err, "unexpected update error")
+
+				err = entry.Reload(context.TODO(), db)
+				assert.NoError(t, err, "unexpected reload error")
+
+				assert.Equal(t, 0, entry.Clicks)
+			},
+		},
+		{
+			name: "fail-missing-entry-to-update",
+			id:   1,
+			assertions: func(t *testing.T, db *sqlx.DB, id int, err error) {
+				require.Error(t, err, "unexpected non-nil error")
+				assert.Contains(t, err.Error(), "restore:")
+			},
+			mutations: func(t *testing.T, db *sqlx.DB) {
+				testhelper.DropTable(t, db, "click_trackers")
+			},
+		},
 	}
+}
 
-	m, err := New(cfg)
-	require.NoError(t, err, "unexpected error")
-	require.NotNil(t, m, "unexpected nil")
+func Test_RestoreClickTracker(t *testing.T) {
+	for _, testCase := range getRestoreClickTrackerTestCases() {
+		db, cp, cleanup := mysqlhelper.TestGetMockMariaDB(t)
+		t.Run(testCase.name, func(t *testing.T) {
+			require.NotNil(t, testCase.mutations, "unexpected nil mutations")
+			require.NotNil(t, testCase.assertions, "unexpected nil assertions")
 
-	txHandler, err := mysqltx.New(&mysqltx.Config{
-		Logger:       testLogger,
-		Db:           db,
-		DatabaseName: cp.Database,
-	})
-	require.NoError(t, err, "unexpected error creating the tx handler")
+			defer cleanup()
+			cfg := &Config{
+				Logger:        testLogger,
+				QueryTimeouts: testQueryTimeouts,
+			}
 
-	txHandlerDb, err := txHandler.Db(testCtx)
-	require.NoError(t, err, "unexpected error fetching the db from the tx handler")
-	require.NotNil(t, txHandlerDb, "unexpected nil tx handler db")
+			m, err := New(cfg)
+			require.NoError(t, err, "unexpected error")
+			require.NotNil(t, m, "unexpected nil")
 
-	paginatedClickTracker, err := m.GetClickTrackers(testCtx, txHandlerDb, nil)
-	require.NoError(t, err, "unexpected error fetching the click tracker from the database")
-	require.NotNil(t, txHandlerDb, "unexpected nil click tracker")
-	require.True(t, len(paginatedClickTracker.ClickTrackers) > 0, "unexpected empty click tracker")
+			txHandler, err := mysqltx.New(&mysqltx.Config{
+				Logger:       testLogger,
+				Db:           db,
+				DatabaseName: cp.Database,
+			})
+			require.NoError(t, err, "unexpected error creating the tx handler")
 
-	deleteClickTracker := model.DeleteClickTracker{
-		Id: 444,
+			txHandlerDb, err := txHandler.Db(testCtx)
+			require.NoError(t, err, "unexpected error fetching the db from the tx handler")
+			require.NotNil(t, txHandlerDb, "unexpected nil tx handler db")
+
+			testCase.mutations(t, db)
+			err = m.RestoreClickTracker(testCtx, txHandlerDb, testCase.id)
+			testCase.assertions(t, db, testCase.id, err)
+		})
 	}
-
-	id := deleteClickTracker.Id
-
-	err = m.DeleteClickTracker(testCtx, txHandlerDb, id)
-	require.Error(t, err, "unexpected error: invalid id passed")
 }

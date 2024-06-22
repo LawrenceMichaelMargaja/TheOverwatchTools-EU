@@ -379,16 +379,18 @@ func Test_CreateClickTrackers(t *testing.T) {
 	}
 }
 
-type testCaseDeleteClickTracker struct {
+// test for restore method
+
+type testCaseRestoreClickTrackers struct {
 	name              string
 	fnGetTestServices func(t *testing.T) (*testServices, func())
 	mutations         func(t *testing.T, modules *testassets.Container)
-	clickTrackerId    int
+	cltID             int
 	assertions        func(t *testing.T, resp []byte, respCode int)
 }
 
-func getTestCasesDeleteClickTracker() []testCaseDeleteClickTracker {
-	return []testCaseDeleteClickTracker{
+func getTestCasesRestoreClickTrackers() []testCaseRestoreClickTrackers {
+	return []testCaseRestoreClickTrackers{
 		{
 			name: "success",
 			fnGetTestServices: func(t *testing.T) (*testServices, func()) {
@@ -405,7 +407,7 @@ func getTestCasesDeleteClickTracker() []testCaseDeleteClickTracker {
 			mutations: func(t *testing.T, modules *testassets.Container) {
 
 			},
-			clickTrackerId: 1,
+			cltID: 1,
 			assertions: func(t *testing.T, resp []byte, respCode int) {
 				require.Equal(t, http.StatusOK, respCode)
 				var clickTracker *model.ClickTracker
@@ -417,8 +419,8 @@ func getTestCasesDeleteClickTracker() []testCaseDeleteClickTracker {
 	}
 }
 
-func Test_DeleteClickTracker(t *testing.T) {
-	for _, testCase := range getTestCasesDeleteClickTracker() {
+func Test_RestoreClickTrackers(t *testing.T) {
+	for _, testCase := range getTestCasesRestoreClickTrackers() {
 		t.Run(testCase.name, func(t *testing.T) {
 			handlers, cleanup := testCase.fnGetTestServices(t)
 			defer cleanup()
@@ -437,8 +439,8 @@ func Test_DeleteClickTracker(t *testing.T) {
 			require.NoError(t, err, "unexpected error instantiating api")
 			require.NotNil(t, api, "unexpected api nil instance")
 
-			url := fmt.Sprintf("/api/v1/clicktrackers/%d", testCase.clickTrackerId)
-			req := httptest.NewRequest(http.MethodDelete, url, nil)
+			url := fmt.Sprintf("/api/v1/clicktrackers/%d", testCase.cltID)
+			req := httptest.NewRequest(http.MethodPatch, url, nil)
 			req.Header = map[string][]string{
 				"Content-Type":    {"application/json"},
 				"Accept-Encoding": {"gzip", "deflate", "br"},

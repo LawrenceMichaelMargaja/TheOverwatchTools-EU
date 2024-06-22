@@ -6,6 +6,7 @@ import (
 	"github.com/dembygenesis/local.tools/internal/model"
 	"github.com/dembygenesis/local.tools/internal/persistence"
 	"github.com/dembygenesis/local.tools/internal/utilities/errs"
+	"github.com/dembygenesis/local.tools/internal/utilities/strutil"
 	"github.com/dembygenesis/local.tools/internal/utilities/validationutils"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -133,7 +134,6 @@ func (i *Service) UpdateCapturePages(ctx context.Context, params *model.UpdateCa
 	}
 
 	capturepages, err := i.cfg.Persistor.UpdateCapturePages(ctx, tx, params)
-	//tx.Commit(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("update capture pages: %w", err)
 	}
@@ -198,4 +198,18 @@ func (s *Service) RestoreCapturePages(ctx context.Context, params *model.Restore
 	}
 
 	return nil
+}
+
+func (i *Service) GetCapturePageByID(ctx context.Context, id int) (*model.CapturePages, error) {
+	db, err := i.cfg.TxProvider.Db(ctx)
+	if err != nil {
+		return nil, errs.New(&errs.Cfg{
+			StatusCode: http.StatusInternalServerError,
+			Err:        fmt.Errorf("get db: %v", err),
+		})
+	}
+
+	fmt.Println("the filter at the service --- ", strutil.GetAsJson(id))
+	paginated, err := i.cfg.Persistor.GetCapturePageById(ctx, db, id)
+	return paginated, nil
 }

@@ -17,4 +17,5 @@ type persistor interface {
 	GetClickTrackerSetById(ctx context.Context, tx persistence.TransactionHandler, id int) (*model.ClickTrackerSet, error)
 	UpdateClickTrackers(ctx context.Context, tx persistence.TransactionHandler, params *model.UpdateClickTracker) (*model.ClickTracker, error)
 	DeleteClickTracker(ctx context.Context, tx persistence.TransactionHandler, id int) error
+	RestoreClickTracker(ctx context.Context, tx persistence.TransactionHandler, id int) error
 }

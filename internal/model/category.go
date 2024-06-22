@@ -6,13 +6,14 @@ import (
 	"github.com/dembygenesis/local.tools/internal/sysconsts"
 	"github.com/dembygenesis/local.tools/internal/utilities/errs"
 	"github.com/dembygenesis/local.tools/internal/utilities/validationutils"
+	"github.com/volatiletech/null/v8"
 	"strings"
 )
 
 type UpdateCategory struct {
-	Id                int    `json:"id" validate:"required,greater_than_zero"`
-	CategoryTypeRefId int    `json:"category_type_ref_id"`
-	Name              string `json:"name"`
+	Id                int         `json:"id" validate:"required,greater_than_zero"`
+	CategoryTypeRefId null.Int    `json:"category_type_ref_id"`
+	Name              null.String `json:"name"`
 }
 
 type DeleteCategory struct {
@@ -30,16 +31,20 @@ func (c *UpdateCategory) Validate() error {
 	}
 
 	hasAtLeastOneUpdateParameters := false
-	if c.CategoryTypeRefId > 0 {
-		hasAtLeastOneUpdateParameters = true
-	} else {
-		errList.Add(sysconsts.ErrCapturePageSetId)
+	if c.CategoryTypeRefId.Valid {
+		if c.CategoryTypeRefId.Int > 0 {
+			hasAtLeastOneUpdateParameters = true
+		} else {
+			errList.Add(sysconsts.ErrCategoryTypeRefIdInvalid)
+		}
 	}
 
-	if strings.TrimSpace(c.Name) != "" {
-		hasAtLeastOneUpdateParameters = true
-	} else {
-		errList.Add(sysconsts.ErrCategoryTypeRefIdInvalid)
+	if c.Name.Valid {
+		if c.Name.Valid && strings.TrimSpace(c.Name.String) != "" {
+			hasAtLeastOneUpdateParameters = true
+		} else {
+			errList.Add(sysconsts.ErrCategoryTypeRefIdInvalid)
+		}
 	}
 
 	if !hasAtLeastOneUpdateParameters {
@@ -49,14 +54,7 @@ func (c *UpdateCategory) Validate() error {
 	return nil
 }
 
-func (c *UpdateCategory) ToCategory() *Category {
-	return &Category{
-		Id:                c.Id,
-		CategoryTypeRefId: c.CategoryTypeRefId,
-		Name:              c.Name,
-	}
-}
-
+// CreateCategory struct for creating a new category
 type CreateCategory struct {
 	CategoryTypeRefId int    `json:"category_type_ref_id" validate:"required,greater_than_zero"`
 	Name              string `json:"name" validate:"required"`
@@ -81,6 +79,7 @@ type Category struct {
 	CategoryTypeRefId int    `json:"category_type_ref_id" boil:"category_type_ref_id" swaggerignore:"true"`
 	Name              string `json:"name" boil:"name"`
 	CategoryType      string `json:"category_type" boil:"category_type"`
+	IsActive          int    `json:"is_active" boil:"is_active"`
 }
 
 func (c *Category) Validate() error {
