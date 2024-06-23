@@ -21,14 +21,10 @@ func (m *Repository) GetClickTrackers(ctx context.Context, tx persistence.Transa
 		return nil, fmt.Errorf("extract context executor: %v", err)
 	}
 
-	fmt.Println("the filters ---- ", strutil.GetAsJson(filters))
-
 	res, err := m.getClickTrackers(ctx, ctxExec, filters)
 	if err != nil {
 		return nil, fmt.Errorf("read clickTrackers: %v", err)
 	}
-
-	fmt.Println("the res -- ", strutil.GetAsJson(res))
 
 	return res, nil
 }
@@ -384,12 +380,8 @@ func (m *Repository) GetClickTrackerByName(ctx context.Context, tx persistence.T
 		return nil, fmt.Errorf("click tracker filtered by name: %v", err)
 	}
 
-	//if paginated.Pagination.RowCount == 0 {
-	//	return nil, nil
-	//}
-
 	if paginated.Pagination.RowCount != 1 {
-		return nil, errors.New("expected exactly one click tracker entry")
+		return nil, errors.New(sysconsts.ErrExpectedExactlyOneEntry)
 	}
 
 	return &paginated.ClickTrackers[0], nil

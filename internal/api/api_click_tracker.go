@@ -90,7 +90,7 @@ func (a *Api) DeleteClickTracker(ctx *fiber.Ctx) error {
 		return ctx.Status(http.StatusBadRequest).JSON(errs.ToArr(err))
 	}
 
-	deleteParams := &model.DeleteClickTracker{Id: clickTrackerId}
+	deleteParams := &model.DeleteClickTracker{ID: clickTrackerId}
 
 	isDeleted, err := a.cfg.ClickTrackerService.GetClickTrackerByID(ctx.Context(), clickTrackerId)
 	fmt.Println(strutil.GetAsJson("del cli ------------------------------------ ", isDeleted.Clicks))

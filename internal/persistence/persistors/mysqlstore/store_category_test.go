@@ -15,6 +15,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"strings"
 	"testing"
@@ -558,9 +559,15 @@ func Test_UpdateCategories_Success(t *testing.T) {
 	require.True(t, len(paginatedCategories.Categories) > 0, "unexpected empty categories")
 
 	updateCategory := model.UpdateCategory{
-		Id:                1,
-		CategoryTypeRefId: 1,
-		Name:              "Wash Kho sahbi!",
+		Id: 1,
+		CategoryTypeRefId: null.Int{
+			Int:   paginatedCategories.Categories[0].CategoryTypeRefId,
+			Valid: true,
+		},
+		Name: null.String{
+			String: paginatedCategories.Categories[0].Name + " sample_category",
+			Valid:  true,
+		},
 	}
 
 	fmt.Println("UpdateCategory params:", strutil.GetAsJson(&updateCategory))
@@ -600,9 +607,15 @@ func Test_UpdateCategories_Fail(t *testing.T) {
 	require.True(t, len(paginatedCategories.Categories) > 0, "unexpected empty categories")
 
 	updateCategory := model.UpdateCategory{
-		Id:                323123,
-		CategoryTypeRefId: 22,
-		Name:              "Wash Kho sahbi!",
+		Id: 3213123123,
+		CategoryTypeRefId: null.Int{
+			Int:   paginatedCategories.Categories[0].CategoryTypeRefId,
+			Valid: true,
+		},
+		Name: null.String{
+			String: paginatedCategories.Categories[0].Name + " sample_category",
+			Valid:  true,
+		},
 	}
 
 	cat, err := m.UpdateCategory(testCtx, txHandlerDb, &updateCategory)

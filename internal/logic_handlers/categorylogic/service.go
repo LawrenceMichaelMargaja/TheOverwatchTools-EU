@@ -139,14 +139,14 @@ func (i *Service) UpdateCategory(ctx context.Context, params *model.UpdateCatego
 			Err:        fmt.Errorf("get db: %v", err),
 		})
 	}
-	defer tx.Rollback(ctx)
+	defer tx.Commit(ctx)
 
 	if err := params.Validate(); err != nil {
 		return nil, fmt.Errorf("validate: %w", err)
 	}
 
-	if params.CategoryTypeRefId > 0 {
-		if err := i.validateCategoryTypeId(ctx, tx, params.CategoryTypeRefId); err != nil {
+	if params.CategoryTypeRefId.Valid {
+		if err := i.validateCategoryTypeId(ctx, tx, params.CategoryTypeRefId.Int); err != nil {
 			return nil, fmt.Errorf("category_type_id: %w", err)
 		}
 	}
